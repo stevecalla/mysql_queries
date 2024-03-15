@@ -1,10 +1,13 @@
 SELECT 
     COALESCE(booking_year, 'Total') AS booking_year,
     COALESCE(booking_month, 'Total') AS booking_month,
-    COALESCE(dayofweek(booking_datetime), 'Total') AS day_of_week_number,
+    COALESCE(DAYOFWEEK(booking_datetime), 'Total') AS day_of_week_number,
     
     FORMAT(SUM(CASE WHEN pickup_day_of_month = booking_day_of_month THEN 1 ELSE 0 END), 0) AS 'SameDay',
     FORMAT(SUM(CASE WHEN pickup_day_of_month <> booking_day_of_month THEN 1 ELSE 0 END), 0) AS 'NextDay+',
+    
+    FORMAT(SUM(CASE WHEN WEEKOFYEAR(pickup_datetime) = WEEKOFYEAR(booking_datetime) THEN 1 ELSE 0 END), 0) AS 'SameWeek',
+    FORMAT(SUM(CASE WHEN WEEKOFYEAR(pickup_datetime) <> WEEKOFYEAR(booking_datetime) THEN 1 ELSE 0 END), 0) AS 'NexWeek+',
     
     FORMAT(SUM(CASE WHEN pickup_day_of_month = booking_day_of_month THEN 1 ELSE 0 END) / COUNT(booking_datetime) * 100, 2) AS 'SameDay%',
     FORMAT(SUM(CASE WHEN pickup_day_of_month <> booking_day_of_month THEN 1 ELSE 0 END) / COUNT(booking_datetime) * 100, 2) AS 'NextDay+%',

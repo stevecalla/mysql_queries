@@ -1,0 +1,91 @@
+-- SELECT @@SERVERNAME
+-- SELECT @@VERSION
+-- SELECT @@datadir
+SELECT @@port, @@datadir
+
+-- @@auto_increment_increment: Returns the auto-increment value for the current session.
+-- @@character_set_client: Returns the character set used by the client.
+-- @@character_set_connection: Returns the character set used for the connection.
+-- @@character_set_database: Returns the character set used by the default database.
+-- @@character_set_results: Returns the character set used for returning query results.
+-- @@character_set_server: Returns the character set used by the server.
+-- @@character_set_system: Returns the character set of the underlying operating system.
+-- @@collation_connection: Returns the collation used for the connection.
+-- @@collation_database: Returns the collation used by the default database.
+-- @@collation_server: Returns the collation used by the server.
+-- @@completion_type: Returns the completion type used for command-line completion.
+-- @@concurrent_insert: Returns the concurrent insert mode (ON or OFF).
+-- @@connect_timeout: Returns the connection timeout value in seconds.
+-- @@datadir: Returns the MySQL data directory path.
+-- @@default_storage_engine: Returns the default storage engine.
+-- @@default_authentication_plugin: Returns the default authentication plugin.
+-- @@delayed_insert_limit: Returns the maximum number of rows allowed in a DELAYED insert queue.
+-- @@delayed_insert_timeout: Returns the maximum time in seconds an INSERT DELAYED statement will wait for free threads in the thread pool.
+-- @@delayed_queue_size: Returns the maximum size of the INSERT DELAYED queue.
+-- @@foreign_key_checks: Returns the status of foreign key constraint checks.
+-- @@ft_boolean_syntax: Returns the Boolean syntax for full-text searches.
+-- @@ft_max_word_len: Returns the maximum length of indexed words in full-text searches.
+-- @@ft_min_word_len: Returns the minimum length of indexed words in full-text searches.
+-- @@ft_query_expansion_limit: Returns the maximum number of terms that can be used in a query expansion.
+-- @@have_innodb: Returns whether the InnoDB storage engine is available.
+-- @@innodb_flush_log_at_trx_commit: Returns the InnoDB flush log at transaction commit value.
+-- @@innodb_support_xa: Returns whether InnoDB supports XA transactions.
+-- @@innodb_version: Returns the version number of the InnoDB storage engine.
+-- @@interactive_timeout: Returns the wait timeout for interactive clients.
+-- @@join_buffer_size: Returns the size of the buffer used for full table scans during joins.
+-- @@language: Returns the current language used by the server.
+-- @@license: Returns the license information for the MySQL server.
+-- @@local_infile: Returns the local infile loading enabled status.
+-- @@lock_wait_timeout: Returns the lock wait timeout value in seconds.
+-- @@log_bin: Returns the binary logging enabled status.
+-- @@log_bin_trust_function_creators: Returns the trust function creators status for binary logging.
+-- @@log_error: Returns the error log file path.
+-- @@lower_case_table_names: Returns the lower case table names setting.
+-- @@max_allowed_packet: Returns the maximum allowed packet size for client/server communication.
+-- @@max_connect_errors: Returns the maximum number of interrupted connection requests allowed.
+-- @@max_connections: Returns the maximum number of concurrent connections allowed.
+-- @@max_delayed_threads: Returns the maximum number of threads allowed for processing INSERT DELAYED statements.
+-- @@max_heap_table_size: Returns the maximum size of heap tables.
+-- @@max_join_size: Returns the maximum size of the join buffer for optimized joins.
+-- @@max_length_for_sort_data: Returns the maximum size of data that can be sorted in memory.
+-- @@max_prepared_stmt_count: Returns the maximum number of prepared statements allowed per session.
+-- @@max_seeks_for_key: Returns the maximum number of seeks allowed per key read.
+-- @@max_sort_length: Returns the maximum length of the sort buffer.
+-- @@max_sp_recursion_depth: Returns the maximum stored procedure recursion depth.
+-- @@max_tmp_tables: Returns the maximum number of temporary tables allowed per session.
+-- @@max_user_connections: Returns the maximum number of simultaneous connections allowed for a single user.
+-- @@net_read_timeout: Returns the network read timeout value in seconds.
+-- @@net_write_timeout: Returns the network write timeout value in seconds.
+-- @@old_passwords: Returns whether old-style passwords are allowed.
+-- @@performance_schema: Returns the performance schema enabled status.
+-- @@port: Returns the port number the server is listening on.
+-- @@protocol_version: Returns the protocol version used by the server.
+-- @@query_cache_size: Returns the size of the query cache.
+-- @@query_cache_type: Returns the query cache type (ON, OFF, or DEMAND).
+-- @@query_cache_wlock_invalidate: Returns whether the query cache can be used with table locks.
+-- @@query_prealloc_size: Returns the query preallocation size.
+-- @@rand_seed1: Returns the first seed value for the random number generator.
+-- @@rand_seed2: Returns the second seed value for the random number generator.
+-- @@sql_mode: Returns the SQL mode.
+-- @@sql_notes: Returns the SQL notes setting.
+-- @@sql_warnings: Returns the SQL warnings setting.
+-- @@ssl_ca: Returns the path to the SSL certificate authority file.
+-- @@ssl_capath: Returns the path to a directory containing trusted SSL CA certificates.
+-- @@ssl_cert: Returns the path to the SSL certificate file.
+-- @@ssl_cipher: Returns the current SSL cipher in use.
+-- @@ssl_crl: Returns the path to the SSL certificate revocation list file.
+-- @@ssl_crlpath: Returns the path to a directory containing certificate revocation lists.
+-- @@ssl_key: Returns the path to the SSL key file.
+-- @@storage_engine: Returns the default storage engine.
+-- @@system_time_zone: Returns the system time zone.
+-- @@time_format: Returns the current time format.
+-- @@time_zone: Returns the time zone.
+-- @@timed_mutexes: Returns whether timed mutexes are supported.
+-- @@timestamp: Returns the current timestamp.
+-- @@tmp_table_size: Returns the maximum size of temporary tables.
+-- @@tx_isolation: Returns the default transaction isolation level.
+-- @@version: Returns the MySQL server version.
+-- @@version_comment: Returns a comment associated with the MySQL version.
+-- @@version_compile_machine: Returns the machine architecture for which the server was compiled.
+-- @@version_compile_os: Returns the operating system on which the server was compiled.
+-- These are just some of the many system variables available in MySQL that you can access using the @@ syntax to retrieve various configuration settings and server information.
