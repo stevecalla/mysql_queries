@@ -1,0 +1,1 @@
+SELECT * FROM performance_schema.table_io_waits_summary_by_index_usage;

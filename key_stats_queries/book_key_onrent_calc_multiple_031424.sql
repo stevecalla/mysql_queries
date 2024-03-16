@@ -14,6 +14,7 @@ DROP TABLE IF EXISTS key_metrics;
 USE ezhire_key_metrics;
 
 -- Set parameters
+SET @booking_date = '2023-01-01';
 SET @pickup_date = '2023-01-01';
 SET @return_date = '2023-01-01';
 SET @status = '%Cancel%';
