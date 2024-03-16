@@ -1,13 +1,13 @@
 -- Drop temporary tables if no longer needed
 DROP TEMPORARY TABLE IF EXISTS temp_1_calendar_date_parts;
-DROP TEMPORARY TABLE IF EXISTS temp_2_days_onrent_metrics;
-DROP TEMPORARY TABLE IF EXISTS temp_2a_days_2onrent_metrics;
-DROP TEMPORARY TABLE IF EXISTS temp_3_revenue_onrent_metrics;
-DROP TEMPORARY TABLE IF EXISTS temp_3a_revenue_onrent_metrics;
-DROP TEMPORARY TABLE IF EXISTS temp_4_segment_onrent_metrics;
-DROP TEMPORARY TABLE IF EXISTS temp_4a_segment_onrent_metrics;
-DROP TEMPORARY TABLE IF EXISTS temp_4b_segment_onrent_metrics;
-DROP TEMPORARY TABLE IF EXISTS temp_4c_segment_onrent_metrics;
+DROP TEMPORARY TABLE IF EXISTS temp_2_onrent_days_metrics;
+DROP TEMPORARY TABLE IF EXISTS temp_2a_onrent_days_metrics;
+DROP TEMPORARY TABLE IF EXISTS temp_3_onrent_revenue_metrics;
+DROP TEMPORARY TABLE IF EXISTS temp_3a_onrent_revenue_metrics;
+DROP TEMPORARY TABLE IF EXISTS temp_4_onrent_segment_metrics;
+DROP TEMPORARY TABLE IF EXISTS temp_4a_onrent_segment_metrics;
+DROP TEMPORARY TABLE IF EXISTS temp_4b_onrent_segment_metrics;
+DROP TEMPORARY TABLE IF EXISTS temp_4c_onrent_segment_metrics;
 DROP TABLE IF EXISTS key_metrics;
 
 -- Select database
@@ -15,7 +15,7 @@ USE ezhire_key_metrics;
 
 -- Set parameters
 SET @pickup_date = '2023-01-01';
-SET @return_date = '2023-01-31';
+SET @return_date = '2023-01-01';
 SET @status = '%Cancel%';
 SET @uae = 'United Arab Emirates'; -- 1
 SET @bhr = 'Bahrain'; -- 2
@@ -38,15 +38,6 @@ SELECT
     MONTH(ct.calendar_date) AS month,
     WEEK(ct.calendar_date) AS week,
     DAY(ct.calendar_date) AS day
-    
--- FROM
---     (SELECT calendar_date FROM calendar_table WHERE calendar_date >= @pickup_date) ct
--- WHERE
---     calendar_date >= @pickup_date
--- GROUP BY
---     ct.calendar_date
--- ORDER BY
---     ct.calendar_date ASC;
 
 FROM
     calendar_table ct
@@ -58,7 +49,7 @@ ORDER BY
     ct.calendar_date ASC;
 
 -- Query 2: Get days on rent store in a temporary table
-CREATE TEMPORARY TABLE IF NOT EXISTS temp_2_days_onrent_metrics AS
+CREATE TEMPORARY TABLE IF NOT EXISTS temp_2_onrent_days_metrics AS
 SELECT
     ct.calendar_date,
 
@@ -73,92 +64,52 @@ SELECT
             ELSE 0
         END
     ) AS days_on_rent_fraction
-    
--- FROM
---     (SELECT calendar_date FROM calendar_table WHERE calendar_date >= @pickup_date) ct
--- INNER JOIN
---     (SELECT * FROM key_metrics_base WHERE return_date >= @return_date AND status NOT LIKE @status) km
---     ON ct.calendar_date >= km.pickup_date AND ct.calendar_date <= km.return_date
--- GROUP BY
---     ct.calendar_date
--- ORDER BY
---     ct.calendar_date ASC;
 
 FROM
     calendar_table ct
+   
+-- Inner join to filter rows based on specific criteria
 INNER JOIN
     key_metrics_base km
-    ON ct.calendar_date >= @pickup_date
-    AND ct.calendar_date >= km.pickup_date
-    AND ct.calendar_date <= km.return_date
-    AND km.return_date >= @return_date
-    AND km.status NOT LIKE @status
+    ON ct.calendar_date >= @booking_date -- Ensure calendar date is after booking date
+    AND km.return_date >= @return_date -- Ensure return date is after or equal to specified return date
+    AND ct.calendar_date >= km.booking_date -- Ensure calendar date is after or equal to booking date
+    AND ct.calendar_date <= km.return_date -- Ensure calendar date is before or equal to return date
+    AND km.status NOT LIKE @status -- Exclude rows with status matching the specified pattern
 GROUP BY
-    ct.calendar_date
+    ct.calendar_date -- Group by calendar date
 ORDER BY
-    ct.calendar_date ASC;
+    ct.calendar_date ASC; -- Order by calendar date in ascending order
 
 -- Query 2a: Get days on rent store in a temporary table
-CREATE TEMPORARY TABLE IF NOT EXISTS temp_2a_days_onrent_metrics AS
+CREATE TEMPORARY TABLE IF NOT EXISTS temp_2a_onrent_days_metrics AS
 SELECT
     ct.calendar_date,
 
     -- BOOKING COUNT
     SUM(
         CASE
-            WHEN ct.calendar_date = km.pickup_date THEN 1
+            WHEN ct.calendar_date = km.booking_date THEN 1
             ELSE 0
         END
     ) AS booking_count
-    
--- FROM
---     (SELECT calendar_date FROM calendar_table WHERE calendar_date >= @pickup_date) ct
--- INNER JOIN
---     (SELECT * FROM key_metrics_base WHERE return_date >= @return_date AND status NOT LIKE @status) km
---     ON ct.calendar_date >= km.pickup_date AND ct.calendar_date <= km.return_date
--- GROUP BY
---     ct.calendar_date
--- ORDER BY
---     ct.calendar_date ASC;
 
 FROM
     calendar_table ct
 INNER JOIN
     key_metrics_base km
-    ON ct.calendar_date >= @pickup_date
-    AND ct.calendar_date >= km.pickup_date
-    AND ct.calendar_date <= km.return_date
+    ON ct.calendar_date >= @booking_date
     AND km.return_date >= @return_date
+    AND ct.calendar_date >= km.booking_date
+    AND ct.calendar_date <= km.return_date
     AND km.status NOT LIKE @status
 GROUP BY
     ct.calendar_date
 ORDER BY
     ct.calendar_date ASC;
 
--- Query 3: Get days on rent revneue and store in a temporary table
-CREATE TEMPORARY TABLE IF NOT EXISTS temp_3_revenue_onrent_metrics AS
--- SELECT
---     ct.calendar_date,
-
---     -- REVENUE ALLOCATION
---     SUM(
---         CASE
---             -- between is inclusive of pickup and return date
---             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date THEN booking_charge_aed_per_day
---             ELSE booking_charge_aed
---         END
---     ) AS booking_charge_aed_rev_allocation
-
--- FROM
---     (SELECT calendar_date FROM calendar_table WHERE calendar_date >= @pickup_date) ct
--- INNER JOIN
---     (SELECT * FROM key_metrics_base WHERE return_date >= @return_date AND status NOT LIKE @status) km
---     ON ct.calendar_date >= km.pickup_date AND ct.calendar_date <= km.return_date
--- GROUP BY
---     ct.calendar_date
--- ORDER BY
---     ct.calendar_date ASC;
-
+-- Query 3: Get days on rent revenue and store in a temporary table
+CREATE TEMPORARY TABLE IF NOT EXISTS temp_3_onrent_revenue_metrics AS
 SELECT
     ct.calendar_date,
 
@@ -167,7 +118,7 @@ SELECT
         CASE
             -- between is inclusive of pickup and return date
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date THEN booking_charge_aed_per_day
-            ELSE booking_charge_aed
+            ELSE 0
         END
     ) AS booking_charge_aed_rev_allocation
 
@@ -175,18 +126,18 @@ FROM
     calendar_table ct
 INNER JOIN
     key_metrics_base km
-    ON ct.calendar_date >= @pickup_date
-    AND ct.calendar_date >= km.pickup_date
-    AND ct.calendar_date <= km.return_date
+    ON ct.calendar_date >= @booking_date
     AND km.return_date >= @return_date
+    AND ct.calendar_date >= km.booking_date
+    AND ct.calendar_date <= km.return_date
     AND km.status NOT LIKE @status
 GROUP BY
     ct.calendar_date
 ORDER BY
     ct.calendar_date ASC;
 
--- Query 3a: Get days on rent revneue and store in a temporary table
-CREATE TEMPORARY TABLE IF NOT EXISTS temp_3a_revenue_onrent_metrics AS
+-- Query 3a: Get days on rent revenue and store in a temporary table
+CREATE TEMPORARY TABLE IF NOT EXISTS temp_3a_onrent_revenue_metrics AS
 SELECT
     ct.calendar_date,
 
@@ -195,22 +146,26 @@ SELECT
         CASE
             -- between is inclusive of pickup and return date
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date THEN booking_charge_less_discount_aed_per_day
-            ELSE booking_charge_less_discount_aed
+            ELSE 0
         END
     ) AS booking_charge_Less_discount_aed_rev_allocation
-    
+
 FROM
-    (SELECT calendar_date FROM calendar_table WHERE calendar_date >= @pickup_date) ct
+    calendar_table ct
 INNER JOIN
-    (SELECT * FROM key_metrics_base WHERE return_date >= @return_date AND status NOT LIKE @status) km
-    ON ct.calendar_date >= km.pickup_date AND ct.calendar_date <= km.return_date
+    key_metrics_base km
+    ON ct.calendar_date >= @booking_date
+    AND km.return_date >= @return_date
+    AND ct.calendar_date >= km.booking_date
+    AND ct.calendar_date <= km.return_date
+    AND km.status NOT LIKE @status
 GROUP BY
     ct.calendar_date
 ORDER BY
     ct.calendar_date ASC;
 
 -- Query 4: Get days on rent for vendor and store in a temporary table
-CREATE TEMPORARY TABLE IF NOT EXISTS temp_4_segment_onrent_metrics AS
+CREATE TEMPORARY TABLE IF NOT EXISTS temp_4_onrent_segment_metrics AS
 SELECT
     ct.calendar_date,
 
@@ -232,19 +187,23 @@ SELECT
             ELSE 0
         END
     ) AS vendor_on_rent_marketplace
-    
+
 FROM
-    (SELECT calendar_date FROM calendar_table WHERE calendar_date >= @pickup_date) ct
+    calendar_table ct
 INNER JOIN
-    (SELECT * FROM key_metrics_base WHERE return_date >= @return_date AND status NOT LIKE @status) km
-    ON ct.calendar_date >= km.pickup_date AND ct.calendar_date <= km.return_date
+    key_metrics_base km
+    ON ct.calendar_date >= @booking_date
+    AND km.return_date >= @return_date
+    AND ct.calendar_date >= km.booking_date
+    AND ct.calendar_date <= km.return_date
+    AND km.status NOT LIKE @status
 GROUP BY
     ct.calendar_date
 ORDER BY
     ct.calendar_date ASC;
 
 -- Query 4a: Get days on rent for booking type and store in a temporary table
-CREATE TEMPORARY TABLE IF NOT EXISTS temp_4a_segment_onrent_metrics AS
+CREATE TEMPORARY TABLE IF NOT EXISTS temp_4a_onrent_segment_metrics AS
 SELECT
     ct.calendar_date,
     
@@ -284,19 +243,23 @@ SELECT
             ELSE 0
         END
     ) AS type_on_rent_subscription
-    
+
 FROM
-    (SELECT calendar_date FROM calendar_table WHERE calendar_date >= @pickup_date) ct
+    calendar_table ct
 INNER JOIN
-    (SELECT * FROM key_metrics_base WHERE return_date >= @return_date AND status NOT LIKE @status) km
-    ON ct.calendar_date >= km.pickup_date AND ct.calendar_date <= km.return_date
+    key_metrics_base km
+    ON ct.calendar_date >= @booking_date
+    AND km.return_date >= @return_date
+    AND ct.calendar_date >= km.booking_date
+    AND ct.calendar_date <= km.return_date
+    AND km.status NOT LIKE @status
 GROUP BY
     ct.calendar_date
 ORDER BY
     ct.calendar_date ASC;
 
 -- Query 4b: Get days on rent for user and store in a temporary table
-CREATE TEMPORARY TABLE IF NOT EXISTS temp_4b_segment_onrent_metrics AS
+CREATE TEMPORARY TABLE IF NOT EXISTS temp_4b_onrent_segment_metrics AS
 SELECT
     ct.calendar_date,
     
@@ -320,17 +283,21 @@ SELECT
     ) AS user_on_rent_new
 
 FROM
-    (SELECT calendar_date FROM calendar_table WHERE calendar_date >= @pickup_date) ct
+    calendar_table ct
 INNER JOIN
-    (SELECT * FROM key_metrics_base WHERE return_date >= @return_date AND status NOT LIKE @status) km
-    ON ct.calendar_date >= km.pickup_date AND ct.calendar_date <= km.return_date
+    key_metrics_base km
+    ON ct.calendar_date >= @booking_date
+    AND km.return_date >= @return_date
+    AND ct.calendar_date >= km.booking_date
+    AND ct.calendar_date <= km.return_date
+    AND km.status NOT LIKE @status
 GROUP BY
     ct.calendar_date
 ORDER BY
     ct.calendar_date ASC;
 
 -- Query 4c: Get days on rent for country and store in a temporary table
-CREATE TEMPORARY TABLE IF NOT EXISTS temp_4c_segment_onrent_metrics AS
+CREATE TEMPORARY TABLE IF NOT EXISTS temp_4c_onrent_segment_metrics AS
 SELECT
     ct.calendar_date,
 
@@ -417,10 +384,14 @@ SELECT
     ) AS country_on_rent_gbr
 
 FROM
-    (SELECT calendar_date FROM calendar_table WHERE calendar_date >= @pickup_date) ct
+    calendar_table ct
 INNER JOIN
-    (SELECT * FROM key_metrics_base WHERE return_date >= @return_date AND status NOT LIKE @status) km
-    ON ct.calendar_date >= km.pickup_date AND ct.calendar_date <= km.return_date
+    key_metrics_base km
+    ON ct.calendar_date >= @booking_date
+    AND km.return_date >= @return_date
+    AND ct.calendar_date >= km.booking_date
+    AND ct.calendar_date <= km.return_date
+    AND km.status NOT LIKE @status
 GROUP BY
     ct.calendar_date
 ORDER BY
@@ -429,12 +400,13 @@ ORDER BY
 -- Create a new table using the combined query result
 CREATE TABLE key_metrics AS
 SELECT
+    t1.created_at,
     t1.calendar_date,
     t1.year,
     t1.quarter,
     t1.month,
     t1.week,
-    t1.day
+    t1.day,
 
     t2.days_on_rent_whole_day,
     t2.days_on_rent_fraction,
@@ -450,7 +422,7 @@ SELECT
     t4a.type_on_rent_daily,
     t4a.type_on_rent_weekly,
     t4a.type_on_rent_monthly,
-    t4a.type_on_rent_subscription
+    t4a.type_on_rent_subscription,
 
     t4b.user_on_rent_repeat,
     t4b.user_on_rent_new,
@@ -468,31 +440,61 @@ SELECT
 FROM
     temp_1_calendar_date_parts t1
 JOIN
-    temp_2_days_onrent_metrics t2 ON t1.calendar_date = t2.calendar_date
+    temp_2_onrent_days_metrics t2 ON t1.calendar_date = t2.calendar_date
 JOIN
-    temp_2a_days_2a_onrent_metrics t2a ON t1.calendar_date = t2a.calendar_date
+    temp_2a_onrent_days_metrics t2a ON t1.calendar_date = t2a.calendar_date
 JOIN
-    temp_3_revenue_3_onrent_metrics t3 ON t1.calendar_date = t3.calendar_date
+    temp_3_onrent_revenue_metrics t3 ON t1.calendar_date = t3.calendar_date
 JOIN
-    temp_3a_revenue_3a_onrent_metrics t3a ON t1.calendar_date = t3a.calendar_date
+    temp_3a_onrent_revenue_metrics t3a ON t1.calendar_date = t3a.calendar_date
 JOIN
-    temp_4_segment_onrent_metrics t4 ON t1.calendar_date = t4.calendar_date
+    temp_4_onrent_segment_metrics t4 ON t1.calendar_date = t4.calendar_date
 JOIN
-    temp_4a_segment_onrent_metrics t4a ON t1.calendar_date = t4a.calendar_date
+    temp_4a_onrent_segment_metrics t4a ON t1.calendar_date = t4a.calendar_date
 JOIN
-    temp_4b_segment_onrent_metrics t4b ON t1.calendar_date = t4b.calendar_date
+    temp_4b_onrent_segment_metrics t4b ON t1.calendar_date = t4b.calendar_date
 JOIN
-    temp_4c_segment_onrent_metrics t4c ON t1.calendar_date = t4c.calendar_date
+    temp_4c_onrent_segment_metrics t4c ON t1.calendar_date = t4c.calendar_date
 ORDER BY
     t1.calendar_date ASC;
 
 -- Drop temporary tables if no longer needed
 DROP TEMPORARY TABLE IF EXISTS temp_1_calendar_date_parts;
-DROP TEMPORARY TABLE IF EXISTS temp_2_days_onrent_metrics;
-DROP TEMPORARY TABLE IF EXISTS temp_2a_days_2onrent_metrics;
-DROP TEMPORARY TABLE IF EXISTS temp_3_revenue_onrent_metrics;
-DROP TEMPORARY TABLE IF EXISTS temp_3a_revenue_onrent_metrics;
-DROP TEMPORARY TABLE IF EXISTS temp_4_segment_onrent_metrics;
-DROP TEMPORARY TABLE IF EXISTS temp_4a_segment_onrent_metrics;
-DROP TEMPORARY TABLE IF EXISTS temp_4b_segment_onrent_metrics;
-DROP TEMPORARY TABLE IF EXISTS temp_4c_segment_onrent_metrics;
+DROP TEMPORARY TABLE IF EXISTS temp_2_onrent_days_metrics;
+DROP TEMPORARY TABLE IF EXISTS temp_2a_onrent_days_metrics;
+DROP TEMPORARY TABLE IF EXISTS temp_3_onrent_revenue_metrics;
+DROP TEMPORARY TABLE IF EXISTS temp_3a_onrent_revenue_metrics;
+DROP TEMPORARY TABLE IF EXISTS temp_4_onrent_segment_metrics;
+DROP TEMPORARY TABLE IF EXISTS temp_4a_onrent_segment_metrics;
+DROP TEMPORARY TABLE IF EXISTS temp_4b_onrent_segment_metrics;
+DROP TEMPORARY TABLE IF EXISTS temp_4c_onrent_segment_metrics;
+
+-- View the key_metrics table
+SELECT * FROM key_metrics LIMIT 10;
+
+-- View key_metrics summary table
+SELECT 
+    year,
+    month,
+    FORMAT(SUM(booking_count), 0) AS booking_count,
+    FORMAT(SUM(days_on_rent_fraction), 0) AS days_on_rent_fraction,
+    FORMAT(SUM(days_on_rent_whole_day), 0) AS days_on_rent_whole_day,
+    CONCAT('AED ', FORMAT(SUM(booking_charge_Less_discount_aed_rev_allocation), 0)) AS booking_charge_Less_discount_aed,
+    CONCAT('AED ', FORMAT(SUM(booking_charge_aed_rev_allocation), 0)) AS booking_charge_aed
+FROM key_metrics
+GROUP BY year, month
+ORDER BY year ASC, month ASC;
+
+-- View key_metrics summary table
+SELECT 
+    year,
+    month,
+    day,
+    FORMAT(SUM(booking_count), 0) AS booking_count,
+    FORMAT(SUM(days_on_rent_fraction), 0) AS days_on_rent_fraction,
+    FORMAT(SUM(days_on_rent_whole_day), 0) AS days_on_rent_whole_day,
+    CONCAT('AED ', FORMAT(SUM(booking_charge_Less_discount_aed_rev_allocation), 0)) AS booking_charge_Less_discount_aed,
+    CONCAT('AED ', FORMAT(SUM(booking_charge_aed_rev_allocation), 0)) AS booking_charge_aed
+FROM key_metrics
+GROUP BY year, month, day
+ORDER BY year ASC, month ASC, day ASC;
