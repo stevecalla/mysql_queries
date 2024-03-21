@@ -27,7 +27,6 @@ SET @pak = 'Pakistan'; -- 6
 SET @geo = 'Georgia'; -- 6
 SET @omn = 'Oman'; -- 8
 SET @sbr = 'Serbia'; -- 9
-SET @gbr = 'United Kingdom'; -- 10
 
 -- Query 1: Get date parts and store in a temporary table
 CREATE TEMPORARY TABLE IF NOT EXISTS temp_1_calendar_date_parts AS
@@ -93,7 +92,23 @@ SELECT
             WHEN ct.calendar_date = km.booking_date THEN 1
             ELSE 0
         END
-    ) AS booking_count
+    ) AS booking_count,
+
+    -- PICKUP COUNT
+    SUM(
+        CASE
+            WHEN ct.calendar_date = km.pickup_date THEN 1
+            ELSE 0
+        END
+    ) AS pickup_count,
+
+    -- RETURN COUNT
+    SUM(
+        CASE
+            WHEN ct.calendar_date = km.return_date THEN 1
+            ELSE 0
+        END
+    ) AS return_count
 
 FROM
     calendar_table ct
@@ -216,7 +231,7 @@ SELECT
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date AND booking_type LIKE 'Daily' THEN 1
             ELSE 0
         END
-    ) AS type_on_rent_daily,
+    ) AS booking_type_on_rent_daily,
     
     SUM(
         CASE
@@ -225,7 +240,7 @@ SELECT
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date AND booking_type LIKE 'Weekly' THEN 1
             ELSE 0
         END
-    ) AS type_on_rent_weekly,
+    ) AS booking_type_on_rent_weekly,
     
     SUM(
         CASE
@@ -234,7 +249,7 @@ SELECT
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date AND booking_type LIKE 'Monthly' THEN 1
             ELSE 0
         END
-    ) AS type_on_rent_monthly,
+    ) AS booking_type_on_rent_monthly,
     
     SUM(
         CASE
@@ -243,7 +258,7 @@ SELECT
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date AND booking_type LIKE 'Subscription' THEN 1
             ELSE 0
         END
-    ) AS type_on_rent_subscription
+    ) AS booking_type_on_rent_subscription
 
 FROM
     calendar_table ct
@@ -272,7 +287,7 @@ SELECT
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date AND is_repeat LIKE 'Yes' THEN 1
             ELSE 0
         END
-    ) AS user_on_rent_repeat,
+    ) AS is_repeat_on_rent_yes,
     
     SUM(
         CASE
@@ -281,7 +296,7 @@ SELECT
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date AND is_repeat LIKE 'No' THEN 1
             ELSE 0
         END
-    ) AS user_on_rent_new
+    ) AS is_repeat_on_rent_no
 
 FROM
     calendar_table ct
@@ -310,7 +325,7 @@ SELECT
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date AND LOWER(country) LIKE LOWER(@uae) THEN 1
             ELSE 0
         END
-    ) AS country_on_rent_uae,
+    ) AS country_on_rent_united_arab_emirates,
     SUM(
         CASE
             WHEN ct.calendar_date = km.pickup_date AND LOWER(country) LIKE LOWER(@bhr) THEN km.pickup_fraction_of_day
@@ -318,7 +333,7 @@ SELECT
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date AND LOWER(country) LIKE LOWER(@bhr) THEN 1
             ELSE 0
         END
-    ) AS country_on_rent_bhr,
+    ) AS country_on_rent_bahrain,
     SUM(
         CASE
             WHEN ct.calendar_date = km.pickup_date AND LOWER(country) LIKE LOWER(@sau) THEN km.pickup_fraction_of_day
@@ -326,7 +341,7 @@ SELECT
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date AND LOWER(country) LIKE LOWER(@sau) THEN 1
             ELSE 0
         END
-    ) AS country_on_rent_sau,
+    ) AS country_on_rent_saudia_arabia,
     SUM(
         CASE
             WHEN ct.calendar_date = km.pickup_date AND LOWER(country) LIKE LOWER(@qat) THEN km.pickup_fraction_of_day
@@ -334,7 +349,7 @@ SELECT
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date AND LOWER(country) LIKE LOWER(@qat) THEN 1
             ELSE 0
         END
-    ) AS country_on_rent_qat,
+    ) AS country_on_rent_qatar,
     SUM(
         CASE
             WHEN ct.calendar_date = km.pickup_date AND LOWER(country) LIKE LOWER(@kwt) THEN km.pickup_fraction_of_day
@@ -342,7 +357,7 @@ SELECT
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date AND LOWER(country) LIKE LOWER(@kwt) THEN 1
             ELSE 0
         END
-    ) AS country_on_rent_kwt,
+    ) AS country_on_rent_kuwait,
     SUM(
         CASE
             WHEN ct.calendar_date = km.pickup_date AND LOWER(country) LIKE LOWER(@pak) THEN km.pickup_fraction_of_day
@@ -350,7 +365,7 @@ SELECT
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date AND LOWER(country) LIKE LOWER(@pak) THEN 1
             ELSE 0
         END
-    ) AS country_on_rent_pak,
+    ) AS country_on_rent_pakistan,
     SUM(
         CASE
             WHEN ct.calendar_date = km.pickup_date AND LOWER(country) LIKE LOWER(@geo) THEN km.pickup_fraction_of_day
@@ -358,7 +373,7 @@ SELECT
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date AND LOWER(country) LIKE LOWER(@geo) THEN 1
             ELSE 0
         END
-    ) AS country_on_rent_geo,
+    ) AS country_on_rent_georgia,
     SUM(
         CASE
             WHEN ct.calendar_date = km.pickup_date AND LOWER(country) LIKE LOWER(@omn) THEN km.pickup_fraction_of_day
@@ -366,7 +381,7 @@ SELECT
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date AND LOWER(country) LIKE LOWER(@omn) THEN 1
             ELSE 0
         END
-    ) AS country_on_rent_omn,
+    ) AS country_on_rent_oman,
     SUM(
         CASE
             WHEN ct.calendar_date = km.pickup_date AND LOWER(country) LIKE LOWER(@sbr) THEN km.pickup_fraction_of_day
@@ -374,15 +389,7 @@ SELECT
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date AND LOWER(country) LIKE LOWER(@sbr) THEN 1
             ELSE 0
         END
-    ) AS country_on_rent_sbr,
-    SUM(
-        CASE
-            WHEN ct.calendar_date = km.pickup_date AND LOWER(country) LIKE LOWER(@gbr) THEN km.pickup_fraction_of_day
-            WHEN ct.calendar_date = km.return_date AND LOWER(country) LIKE LOWER(@gbr) THEN km.return_fraction_of_day
-            WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date AND LOWER(country) LIKE LOWER(@gbr) THEN 1
-            ELSE 0
-        END
-    ) AS country_on_rent_gbr
+    ) AS country_on_rent_serbia
 
 FROM
     calendar_table ct
@@ -413,6 +420,8 @@ SELECT
     t2.days_on_rent_fraction,
 
     t2a.booking_count,
+    t2a.pickup_count,
+    t2a.return_count,
     
     t3.booking_charge_aed_rev_allocation,
     t3a.booking_charge_Less_discount_aed_rev_allocation,
@@ -420,24 +429,23 @@ SELECT
     t4.vendor_on_rent_dispatch,
     t4.vendor_on_rent_marketplace,
 
-    t4a.type_on_rent_daily,
-    t4a.type_on_rent_weekly,
-    t4a.type_on_rent_monthly,
-    t4a.type_on_rent_subscription,
+    t4a.booking_type_on_rent_daily,
+    t4a.booking_type_on_rent_weekly,
+    t4a.booking_type_on_rent_monthly,
+    t4a.booking_type_on_rent_subscription,
 
-    t4b.user_on_rent_repeat,
-    t4b.user_on_rent_new,
+    t4b.is_repeat_on_rent_yes,
+    t4b.is_repeat_on_rent_no,
 
-    t4c.country_on_rent_uae,
-    t4c.country_on_rent_bhr,
-    t4c.country_on_rent_sau,
-    t4c.country_on_rent_qat,
-    t4c.country_on_rent_kwt,
-    t4c.country_on_rent_pak,
-    t4c.country_on_rent_geo,
-    t4c.country_on_rent_omn,
-    t4c.country_on_rent_sbr,
-    t4c.country_on_rent_gbr
+    t4c.country_on_rent_united_arab_emirates,
+    t4c.country_on_rent_bahrain,
+    t4c.country_on_rent_saudia_arabia,
+    t4c.country_on_rent_qatar,
+    t4c.country_on_rent_kuwait,
+    t4c.country_on_rent_pakistan,
+    t4c.country_on_rent_georgia,
+    t4c.country_on_rent_oman,
+    t4c.country_on_rent_serbia
 FROM
     temp_1_calendar_date_parts t1
 JOIN
@@ -478,6 +486,8 @@ SELECT
     year,
     month,
     FORMAT(SUM(booking_count), 0) AS booking_count,
+    FORMAT(SUM(pickup_count), 0) AS pickup_count,
+    FORMAT(SUM(return_count), 0) AS return_count,
     FORMAT(SUM(days_on_rent_fraction), 0) AS days_on_rent_fraction,
     FORMAT(SUM(days_on_rent_whole_day), 0) AS days_on_rent_whole_day,
     CONCAT('AED ', FORMAT(SUM(booking_charge_Less_discount_aed_rev_allocation), 0)) AS booking_charge_Less_discount_aed,
@@ -492,6 +502,8 @@ SELECT
     month,
     day,
     FORMAT(SUM(booking_count), 0) AS booking_count,
+    FORMAT(SUM(pickup_count), 0) AS pickup_count,
+    FORMAT(SUM(return_count), 0) AS return_count,
     FORMAT(SUM(days_on_rent_fraction), 0) AS days_on_rent_fraction,
     FORMAT(SUM(days_on_rent_whole_day), 0) AS days_on_rent_whole_day,
     CONCAT('AED ', FORMAT(SUM(booking_charge_Less_discount_aed_rev_allocation), 0)) AS booking_charge_Less_discount_aed,
