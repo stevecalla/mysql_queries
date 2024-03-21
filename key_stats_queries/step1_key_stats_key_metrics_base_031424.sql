@@ -1,54 +1,8 @@
--- Drop the database if it exists
-DROP DATABASE IF EXISTS ezhire_key_metrics;
-
--- CREATE RENTAL RECORD TABLE
-CREATE DATABASE ezhire_key_metrics;
-
 -- Switch to the newly created database
 USE ezhire_key_metrics;
 
--- ****************** CREATE CALENDAR TABLE START ********************
--- Create the calendar_table
-CREATE TABLE calendar_table (
-    calendar_date DATE PRIMARY KEY,
-    day_of_week VARCHAR(9),
-    day_of_week_numeric INT,
-    week_of_year INT,
-    day_of_year INT,
-
-    -- Create indexes on calendar_date
-    INDEX idx_calendar_date (calendar_date)
-);
-
-SHOW INDEXES FROM calendar_table;
-
-
--- Insert data for the years 2015 and the last day of the current year
-INSERT INTO calendar_table (calendar_date, day_of_week, day_of_week_numeric, week_of_year, day_of_year)
-SELECT
-    date_seq,
-    DAYNAME(date_seq),
-    DAYOFWEEK(date_seq),
-    WEEK(date_seq, 1),
-    DAYOFYEAR(date_seq)
-FROM (
-    SELECT
-        DATE_ADD('2015-01-01', INTERVAL seq DAY) AS date_seq
-    FROM (
-        SELECT
-            (t4*1000 + t3*100 + t2*10 + t1) - 1 AS seq
-        FROM
-            (SELECT 0 AS t1 UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) t1,
-            (SELECT 0 AS t2 UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) t2,
-            (SELECT 0 AS t3 UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9) t3,
-            (SELECT 0 AS t4 UNION SELECT 1 UNION SELECT 2 UNION SELECT 3) t4
-    ) AS seq_table
-    WHERE DATE_ADD('2015-01-01', INTERVAL seq DAY) BETWEEN '2015-01-01' AND DATE_ADD(LAST_DAY(DATE_ADD(NOW(), INTERVAL 12-MONTH(NOW()) MONTH)), INTERVAL 1 YEAR) -- two years from now
-) AS calendar_data;
-
--- Select all records with a limit of 10
-SELECT * FROM calendar_table;
--- ****************** END --- CREATE CALENDAR TABLE ---- END ********************
+-- Drop the database if it exists
+DROP TABLE IF EXISTS key_metrics_base;
 
 -- ****************** START --- CREATE BOOKING BASE DATA START ********************
 -- Step 1: Create the table structure (assuming the structure of booking_data is known)

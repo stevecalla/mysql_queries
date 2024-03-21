@@ -1,17 +1,11 @@
 SET  @str_date = '2024-01-01',@end_date = '2024-01-01';
 
 -- CHANGE LOG ********* START **************
--- add 28 day comparision field
--- add same day / forward categories
--- added booking, pickup and return date with the time
--- adjusted dates to have null values not a date from 1900
--- exclude test bookings
--- 	Burhan Khan what tech team is do when they make test booking , usually they assigned to particular vendor  therefore we exclude it from our query..
--- 		AND COALESCE(vendor_id,'') NOT IN (33, 5 , 218, 23086)
--- 		moreover, we also exclude this
--- 		first_name not LIKE '%test%' and last_name not like '%test%'
---      you can get the detail from user table.
---      select id, first_name, last_name,email from myproject.auth_user
+-- added join to get car class category
+-- LEFT JOIN myproject.rental_cat cat ON cat.id = b.car_available_id -- ADDITION
+    -- car_avail_id, -- ADDED
+    -- car_cat_id, -- ADDED
+    -- car_cat_name, -- ADDED
 -- CHANGE LOG ********* END **************
 
 SELECT 
@@ -135,7 +129,6 @@ SELECT
     CASE WHEN (DateDiff(AddDate(Current_Date(), 0), DATE(booking_datetime)) < (28 + 28)) AND (DateDiff(Current_Date(), DATE(booking_datetime)) >= 28) THEN 1  ELSE 0 END AS '4_Weeks_Prior',
 
     CASE WHEN (DateDiff(AddDate(Current_Date(), 0), DATE(booking_datetime)) < (28 + (52 * 7))) AND (DateDiff(Current_Date(), DATE(booking_datetime)) >= (52 * 7)) THEN 1  ELSE 0 END AS '52_Weeks_Prior',
-
     -- COMPARISON DATES CURRENT 28 DAYS, PRIOR 4 WEEKS, 52 WEEKS PRIOR --- END
     
     status,
@@ -222,11 +215,14 @@ SELECT
             '1900-01-01 12:00:00') AS promocode_created_date,
     promo_code_description,
     
+    car_avail_id, -- ADDED
+    car_cat_id, -- ADDED
+    car_cat_name, -- ADDED
     requested_car,
     car_name,
     make,
     REPLACE(color, ',', '') AS color,
-    
+
     deliver_country,
     deliver_city,
     country_id,
@@ -557,6 +553,7 @@ FROM
                 WHERE
                     cc.booking_id = b.id
                         AND cc.charge_type_id IN (1 , 2, 8, 9, 13, 14, 20, 22, 24, 27, 28, 44, 45, 46, 47)) AS non_rental_charge,
+                        
             0 AS extension_charge,
 
             (SELECT 
@@ -573,6 +570,10 @@ FROM
             '' promo_code_discount_amount,
             DATE_FORMAT(pc.date_created, '%Y-%m-%d %H:%i:%s') promocode_created_date,
             b.Promo_Code promo_code_description,
+
+			b.car_available_id car_avail_id, -- ADDED
+            c.cat_id car_cat_id, -- ADDED
+            cat.cat_name car_cat_name, -- ADDED
 
             ca.car_name requested_car,
             c.car_name,
@@ -624,33 +625,39 @@ FROM
                     rf.booking_id = b.id
                 ORDER BY rf.id DESC
                 LIMIT 1) nps_comment
-    FROM
-        myproject.rental_car_booking2 b
+    FROM myproject.rental_car_booking2 b
+    
     INNER JOIN myproject.rental_fuser f ON f.user_ptr_id = b.owner_id
     INNER JOIN myproject.rental_city rc ON rc.id = b.city_id
     INNER JOIN myproject.rental_country co ON co.id = rc.CountryID
     LEFT JOIN myproject.rental_vendors rv ON rv.owner_id = b.vendor_id
+    
     LEFT JOIN myproject.rental_car c ON c.id = b.car_id
     LEFT JOIN myproject.rental_cars_available ca ON ca.id = b.car_available_id
+    LEFT JOIN myproject.rental_cat cat ON ca.cat_id = cat.id -- ADDITION
+
+    -- LEFT JOIN (SELECT id, car_name,cat_id FROM rental_cars_available) AS car ON r.car_available_id = car.id
+    -- left join ( select id,cat_name from rental_cat) as cat on car.cat_id = cat.id
+    
     LEFT JOIN myproject.rental_add_promo_codes pc ON pc.id = b.Promo_Code_id
     LEFT JOIN myproject.auth_user au ON au.id = b.owner_id
 
 	-- FOR USE IN MYSQL WITH VARIABLES IN LINE 1
 	WHERE DATE(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) BETWEEN @str_date AND @end_date
 		AND COALESCE(b.vendor_id,'') NOT IN (33, 5 , 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
-		-- AND COALESCE(b.vendor_id,'') IN (33, 5 , 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
 		AND (LOWER(au.first_name) NOT LIKE '%test%' AND LOWER(au.last_name) NOT LIKE '%test%' AND LOWER(au.username) NOT LIKE '%test%' AND LOWER(au.email) NOT LIKE '%test%')
-		-- AND (LOWER(au.first_name) LIKE '%test%' OR LOWER(au.last_name) LIKE '%test%' OR LOWER(au.username) LIKE '%test%' OR LOWER(au.email) LIKE '%test%')
-        -- AND b.id = '240842'
+
+		-- -- AND COALESCE(b.vendor_id,'') IN (33, 5 , 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
+        -- -- AND b.id = '240842'
         
 	-- FOR TESTING / AUDITING ******* START *********
 	-- WHERE date(date_add(b.created_on,interval 4 hour)) between '2024-01-01' and '2024-01-01' 
 	-- AND pc.Promo_Code IS NOT NULL
 	-- AND b.id = "218138"
-    -- WHERE b.id = "246414"
+    -- WHERE b.id IN ("246414", "240667")
 	-- FOR TESTING / AUDITING ******* END *********
 	
-	-- FOR USE IN NODE / JAVASCRIPT AS SQL VARIABLES DON'T WORK ******* START *********
+	-- FOR USE IN NODE / JAVASCRIPT AS SQL SET VARIABLES DON'T WORK ******* START *********
 	-- WHERE date(date_add(b.created_on,interval 4 hour)) between 'startDateVariable' and 'endDateVariable'
         -- AND COALESCE(b.vendor_id,'') NOT IN (33, 5 , 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
 		-- AND (LOWER(au.first_name) NOT LIKE '%test%' AND LOWER(au.last_name) NOT LIKE '%test%' AND LOWER(au.username) NOT LIKE '%test%' AND LOWER(au.email) NOT LIKE '%test%')
