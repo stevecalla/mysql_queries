@@ -32,27 +32,9 @@ CREATE TABLE IF NOT EXISTS key_metrics_base (
 
     -- DAYS CALCULATION
     minutes_rented DECIMAL(20, 4) AS (TIMESTAMPDIFF(MINUTE, pickup_datetime, return_datetime)),
-    days_rented DECIMAL(10, 4) AS (TIMESTAMPDIFF(MINUTE, pickup_datetime, return_datetime) / (24 * 60)),
-
-    -- REVENUE CALCULATION
-    booking_charge_aed DOUBLE,
-    booking_charge_less_discount_aed DOUBLE,
-
-    booking_charge_aed_per_day DOUBLE AS (
-        CASE
-            WHEN pickup_date = return_date THEN booking_charge_aed
-            WHEN pickup_date <> return_date AND days_rented <= 2 THEN booking_charge_aed / 2
-            ELSE booking_charge_aed / CEIL((TIMESTAMPDIFF(MINUTE, pickup_datetime, return_datetime) / (24 * 60)))
-        END
-    ),
-
-    booking_charge_less_discount_aed_per_day DOUBLE AS (
-        CASE
-            WHEN pickup_date = return_date THEN booking_charge_less_discount_aed
-            WHEN pickup_date <> return_date AND days_rented <= 2 THEN booking_charge_less_discount_aed / 2
-            ELSE booking_charge_less_discount_aed / CEIL((TIMESTAMPDIFF(MINUTE, pickup_datetime, return_datetime) / (24 * 60)))
-        END
-    ),
+    days_rented DECIMAL(20, 4) AS ((TIMESTAMPDIFF(MINUTE, pickup_datetime, return_datetime)) / total_minutes_in_day) STORED,
+    days_less_extension_days DECIMAL(10, 4) AS (((TIMESTAMPDIFF(MINUTE, pickup_datetime, return_datetime)) / total_minutes_in_day) - extension_days),
+    extension_days DECIMAL(10, 4),
 
     -- PICKUP MINUTE FRACTION CALC
     pickup_hours_to_midnight INT AS (HOUR(TIMEDIFF('24:00:00', pickup_time))) VIRTUAL,
@@ -66,27 +48,50 @@ CREATE TABLE IF NOT EXISTS key_metrics_base (
     return_total_minutes_to_midnight INT AS (return_hours_to_midnight * 60 + return_minutes_to_midnight) VIRTUAL,
     return_fraction_of_day DECIMAL(5, 4) AS (return_total_minutes_to_midnight / total_minutes_in_day ) STORED,
 
+    -- REVENUE CALCULATION
+    booking_charge_aed DOUBLE,
+    booking_charge_less_discount_aed DOUBLE,
+    booking_charge_less_discount_extension_aed DOUBLE,
+    extension_charge_aed DOUBLE,
+
+    -- BOOKING CHARGE AED PER DAY
+    booking_charge_aed_per_day DOUBLE AS (
+        CASE
+            WHEN pickup_date = return_date THEN booking_charge_aed
+            WHEN pickup_date <> return_date AND days_rented <= 2 THEN booking_charge_aed / 2
+            WHEN days_rented > 0 THEN booking_charge_aed / ROUND((days_rented + 1), 0)
+            ELSE 0            
+        END
+    ),
+
+    -- BOOKING CHARGE LESS DISCOUNT AED PER DAY
+    booking_charge_less_discount_aed_per_day DOUBLE AS (
+        CASE
+            WHEN pickup_date = return_date THEN booking_charge_less_discount_aed
+            WHEN pickup_date <> return_date AND days_rented <= 2 THEN booking_charge_less_discount_aed / 2
+            WHEN days_rented > 0 THEN booking_charge_less_discount_aed / ROUND((days_rented + 1), 0)
+            ELSE 0
+        END
+    ),
+
     -- Create indexes on pickup_date, return_date, and status in key_metrics_base
     INDEX idx_pickup_date (pickup_date),
     INDEX idx_return_date (return_date),
-    INDEX idx_status (status)
+    INDEX idx_status (status),
+    INDEX idx_pickup_return_date (pickup_date, return_date)
 );
 
 SHOW INDEXES FROM key_metrics_base;
 
 -- Step 2: Insert data from ezhire_booking_data.booking_data into key_metrics table
-INSERT INTO key_metrics_base (booking_id, status, booking_type, vendor, is_repeat, country, booking_date, pickup_date, pickup_datetime, return_date, return_datetime, booking_charge_aed, booking_charge_less_discount_aed)
+INSERT INTO key_metrics_base (booking_id, status, booking_type, vendor, is_repeat, country, booking_date, pickup_date, pickup_datetime, return_date, return_datetime, extension_days, booking_charge_aed, booking_charge_less_discount_aed, extension_charge_aed, booking_charge_less_discount_extension_aed)
 
-SELECT booking_id, status, booking_type, marketplace_or_dispatch AS vendor, repeated_user AS is_repeat, deliver_country AS country, booking_date, pickup_date, pickup_datetime, return_date, return_datetime, booking_charge_aed, booking_charge_less_discount_aed
+SELECT booking_id, status, booking_type, marketplace_or_dispatch AS vendor, repeated_user AS is_repeat, deliver_country AS country, booking_date, pickup_date, pickup_datetime, return_date, return_datetime, extension_days, booking_charge_aed, booking_charge_less_discount_aed, extension_charge_aed, booking_charge_less_discount_extension_aed
 
 FROM ezhire_booking_data.booking_data;
--- WHERE TIMESTAMPDIFF(MINUTE, pickup_datetime, return_datetime) / (24 * 60) = 0;
 
 ALTER TABLE key_metrics_base
---     ADD INDEX idx_pickup_date (pickup_date),
---     ADD INDEX idx_return_date (return_date),
-    -- ADD INDEX idx_booking_id (booking_id), -- Add this index if 'booking_id' is used frequently in your queries
-    ADD INDEX idx_pickup_return_date (pickup_date, return_date);
+    ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 
 -- Select all records with a limit of 10
 SELECT * FROM key_metrics_base LIMIT 10;

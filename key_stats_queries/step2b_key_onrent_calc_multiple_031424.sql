@@ -33,16 +33,16 @@ CREATE TEMPORARY TABLE IF NOT EXISTS temp_1_calendar_date_parts AS
 SELECT
     NOW() AS created_at,
     ct.calendar_date,
-    YEAR(ct.calendar_date) AS year,
-    QUARTER(ct.calendar_date) AS quarter,
-    MONTH(ct.calendar_date) AS month,
-    WEEK(ct.calendar_date) AS week,
-    DAY(ct.calendar_date) AS day
+    ct.year AS year,
+    ct.quarter AS quarter,
+    ct.month AS month,
+    ct.week_of_year AS week,
+    ct.day_of_year AS day
 
 FROM
     calendar_table ct
 WHERE
-    calendar_date >= @pickup_date
+    calendar_date >= @booking_date
 GROUP BY
     ct.calendar_date
 ORDER BY
@@ -108,7 +108,37 @@ SELECT
             WHEN ct.calendar_date = km.return_date THEN 1
             ELSE 0
         END
-    ) AS return_count
+    ) AS return_count,
+
+    -- INITIAL RENTAL PERIOD DAYS
+    SUM(
+        CASE
+            WHEN extension_days > 0
+                AND ct.calendar_date BETWEEN 
+                km.pickup_date AND DATE_ADD(km.pickup_date, INTERVAL (km.days_less_extension_days - 1) DAY)
+                THEN 1
+
+            WHEN extension_days = 0
+                AND ct.calendar_date BETWEEN             
+                    km.pickup_date AND
+                    km.return_date
+                THEN 1
+
+            ELSE 0
+        END
+    ) AS day_in_initial_period,
+
+    -- EXTENSION PERIOD DAYS
+    SUM(
+        CASE
+            WHEN extension_days > 0
+                AND ct.calendar_date BETWEEN 
+                DATE_ADD(km.pickup_date, INTERVAL (km.days_less_extension_days) DAY)
+                AND km.return_date
+                THEN 1
+            ELSE 0
+        END
+    ) AS day_in_extension_period
 
 FROM
     calendar_table ct
@@ -129,14 +159,20 @@ CREATE TEMPORARY TABLE IF NOT EXISTS temp_3_onrent_revenue_metrics AS
 SELECT
     ct.calendar_date,
 
-    -- REVENUE ALLOCATION
+    -- REVENUE ALLOCATION FOR EACH DAY
     SUM(
         CASE
-            -- between is inclusive of pickup and return date
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date THEN booking_charge_aed_per_day
             ELSE 0
         END
-    ) AS booking_charge_aed_rev_allocation
+    ) AS booking_charge_aed_rev_allocation,
+
+    SUM(
+        CASE
+            WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date THEN booking_charge_less_discount_aed_per_day
+            ELSE 0
+        END
+    ) AS booking_charge_less_discount_aed_rev_allocation
 
 FROM
     calendar_table ct
@@ -157,14 +193,35 @@ CREATE TEMPORARY TABLE IF NOT EXISTS temp_3a_onrent_revenue_metrics AS
 SELECT
     ct.calendar_date,
 
-    -- REVENUE ALLOCATION
+    -- INITIAL PERIOD REVENUE ALLOCATION
     SUM(
         CASE
-            -- between is inclusive of pickup and return date
-            WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date THEN booking_charge_less_discount_aed_per_day
+            WHEN extension_days > 0
+                AND ct.calendar_date BETWEEN 
+                km.pickup_date AND DATE_ADD(km.pickup_date, INTERVAL (km.days_less_extension_days - 1) DAY)
+                THEN booking_charge_less_discount_aed_per_day
+
+            WHEN extension_days = 0
+                AND ct.calendar_date BETWEEN             
+                    km.pickup_date AND
+                    km.return_date
+                THEN booking_charge_less_discount_aed_per_day
+
             ELSE 0
         END
-    ) AS booking_charge_Less_discount_aed_rev_allocation
+    ) AS rev_aed_in_initial_period,
+
+    -- EXTENSION PERIOD REVENUE ALLOCATION
+    SUM(
+        CASE
+            WHEN extension_days > 0
+                AND ct.calendar_date BETWEEN 
+                DATE_ADD(km.pickup_date, INTERVAL (km.days_less_extension_days) DAY)
+                AND km.return_date
+                THEN booking_charge_less_discount_aed_per_day
+            ELSE 0
+        END
+    ) AS rev_aed_in_extension_period
 
 FROM
     calendar_table ct
@@ -422,9 +479,13 @@ SELECT
     t2a.booking_count,
     t2a.pickup_count,
     t2a.return_count,
+    t2a.day_in_initial_period,
+    t2a.day_in_extension_period,
     
     t3.booking_charge_aed_rev_allocation,
-    t3a.booking_charge_Less_discount_aed_rev_allocation,
+    t3.booking_charge_Less_discount_aed_rev_allocation,
+    t3a.rev_aed_in_initial_period,
+    t3a.rev_aed_in_extension_period,
 
     t4.vendor_on_rent_dispatch,
     t4.vendor_on_rent_marketplace,
@@ -478,36 +539,65 @@ DROP TEMPORARY TABLE IF EXISTS temp_4a_onrent_segment_metrics;
 DROP TEMPORARY TABLE IF EXISTS temp_4b_onrent_segment_metrics;
 DROP TEMPORARY TABLE IF EXISTS temp_4c_onrent_segment_metrics;
 
--- View the key_metrics table
-SELECT * FROM key_metrics LIMIT 10;
-
 -- View key_metrics summary table
 SELECT 
     year,
     month,
+
     FORMAT(SUM(booking_count), 0) AS booking_count,
     FORMAT(SUM(pickup_count), 0) AS pickup_count,
     FORMAT(SUM(return_count), 0) AS return_count,
+
     FORMAT(SUM(days_on_rent_fraction), 0) AS days_on_rent_fraction,
     FORMAT(SUM(days_on_rent_whole_day), 0) AS days_on_rent_whole_day,
-    CONCAT('AED ', FORMAT(SUM(booking_charge_Less_discount_aed_rev_allocation), 0)) AS booking_charge_Less_discount_aed,
-    CONCAT('AED ', FORMAT(SUM(booking_charge_aed_rev_allocation), 0)) AS booking_charge_aed
+
+    CONCAT(FORMAT(SUM(day_in_initial_period), 0)) AS day_in_initial_period,
+    CONCAT(FORMAT(SUM(day_in_extension_period), 0)) AS day_in_extension_period,
+
+    CONCAT(FORMAT(SUM(booking_charge_aed_rev_allocation), 0)) AS booking_charge_aed,
+    CONCAT(FORMAT(SUM(booking_charge_Less_discount_aed_rev_allocation), 0)) AS booking_charge_Less_discount_aed,
+
+    CONCAT(FORMAT(SUM(rev_aed_in_initial_period), 0)) AS rev_aed_in_initial_period,
+    CONCAT(FORMAT(SUM(rev_aed_in_extension_period), 0)) AS rev_aed_in_extension_period,
+    
+    CONCAT(FORMAT(SUM(rev_aed_in_initial_period) + SUM(rev_aed_in_extension_period), 0)) AS total_initial_plus_extension,
+    
+    CONCAT(FORMAT(SUM(booking_charge_Less_discount_aed_rev_allocation) - (SUM(rev_aed_in_initial_period) + SUM(rev_aed_in_extension_period)), 0)) AS diff
+    
 FROM key_metrics
-GROUP BY year, month
+GROUP BY year, month WITH ROLLUP
 ORDER BY year ASC, month ASC;
 
+
+-- View the key_metrics_core_onrent_days table
+SELECT * FROM key_metrics;
+
 -- View key_metrics summary table
-SELECT 
+SELECT
     year,
     month,
     day,
+
     FORMAT(SUM(booking_count), 0) AS booking_count,
     FORMAT(SUM(pickup_count), 0) AS pickup_count,
     FORMAT(SUM(return_count), 0) AS return_count,
+
     FORMAT(SUM(days_on_rent_fraction), 0) AS days_on_rent_fraction,
     FORMAT(SUM(days_on_rent_whole_day), 0) AS days_on_rent_whole_day,
-    CONCAT('AED ', FORMAT(SUM(booking_charge_Less_discount_aed_rev_allocation), 0)) AS booking_charge_Less_discount_aed,
-    CONCAT('AED ', FORMAT(SUM(booking_charge_aed_rev_allocation), 0)) AS booking_charge_aed
+
+    CONCAT(FORMAT(SUM(day_in_initial_period), 0)) AS day_in_initial_period,
+    CONCAT(FORMAT(SUM(day_in_extension_period), 0)) AS day_in_extension_period,
+
+    CONCAT(FORMAT(SUM(booking_charge_aed_rev_allocation), 0)) AS booking_charge_aed,
+    CONCAT(FORMAT(SUM(booking_charge_Less_discount_aed_rev_allocation), 0)) AS booking_charge_Less_discount_aed,
+
+    CONCAT(FORMAT(SUM(rev_aed_in_initial_period), 0)) AS rev_aed_in_initial_period,
+    CONCAT(FORMAT(SUM(rev_aed_in_extension_period), 0)) AS rev_aed_in_extension_period,
+    
+    CONCAT(FORMAT(SUM(rev_aed_in_initial_period) + SUM(rev_aed_in_extension_period), 0)) AS total_initial_plus_extension,
+    
+    CONCAT(FORMAT(SUM(booking_charge_Less_discount_aed_rev_allocation) - (SUM(rev_aed_in_initial_period) + SUM(rev_aed_in_extension_period)), 0)) AS diff
+    
 FROM key_metrics
-GROUP BY year, month, day
+GROUP BY year, month, day WITH ROLLUP
 ORDER BY year ASC, month ASC, day ASC;

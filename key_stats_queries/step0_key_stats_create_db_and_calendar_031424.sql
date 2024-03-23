@@ -11,10 +11,13 @@ USE ezhire_key_metrics;
 -- Create the calendar_table
 CREATE TABLE calendar_table (
     calendar_date DATE PRIMARY KEY,
-    day_of_week VARCHAR(9),
-    day_of_week_numeric INT,
+    year INT,
+    quarter INT,
+    month INT,
     week_of_year INT,
     day_of_year INT,
+    day_of_week VARCHAR(9),
+    day_of_week_numeric INT,
 
     -- Create indexes on calendar_date
     INDEX idx_calendar_date (calendar_date)
@@ -24,13 +27,21 @@ SHOW INDEXES FROM calendar_table;
 
 
 -- Insert data for the years 2015 and the last day of the current year
-INSERT INTO calendar_table (calendar_date, day_of_week, day_of_week_numeric, week_of_year, day_of_year)
+INSERT INTO calendar_table (calendar_date, year, quarter, month, week_of_year, day_of_year, day_of_week, day_of_week_numeric)
 SELECT
     date_seq,
+    YEAR(date_seq),
+    QUARTER(date_seq),
+    MONTH(date_seq),
+    WEEK(date_seq),
+    DAY(date_seq),
     DAYNAME(date_seq),
-    DAYOFWEEK(date_seq),
-    WEEK(date_seq, 1),
-    DAYOFYEAR(date_seq)
+    DAYOFWEEK(date_seq)
+
+    -- DAYNAME(date_seq),
+    -- DAYOFWEEK(date_seq),
+    -- WEEK(date_seq, 1),
+    -- DAYOFYEAR(date_seq)
 FROM (
     SELECT
         DATE_ADD('2015-01-01', INTERVAL seq DAY) AS date_seq
