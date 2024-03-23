@@ -29,7 +29,7 @@ WHERE
 	AND (m.subject LIKE '%exten%' OR m.subject=CONCAT('Late Rental Return for Booking#', m.booking_id))
 	AND m.extension_days > 0
 	AND m.message LIKE '%Dear Partner%'
-	AND booking_id IN ("240667", "246876", "240842", "246867")
+	AND booking_id IN ("240667", "246876", "240842", "246867", '248667')
 	-- AND booking_id IN ("246876")
     
 GROUP BY booking_id, total_old_days;
@@ -49,7 +49,7 @@ WHERE
 	AND (m.subject LIKE '%exten%' OR m.subject=CONCAT('Late Rental Return for Booking#', m.booking_id))
 	AND m.extension_days > 0
 	AND m.message LIKE '%Dear Partner%'
-	AND booking_id IN ("240667", "246876", "240842", "246867")
+	AND booking_id IN ("240667", "246876", "240842", "246867", "248667")
 	-- AND booking_id IN ("246876")
     
 GROUP BY booking_id;
