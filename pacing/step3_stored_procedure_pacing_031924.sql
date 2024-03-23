@@ -38,12 +38,18 @@ BEGIN
         last_day_of_month DATE,
         booking_date DATE,
         days_from_first_day_of_month BIGINT,
+
         count INT,
         total_booking_charge_aed DECIMAL(20, 2),
         total_booking_charge_less_discount_aed DECIMAL(20, 2),
+        total_booking_charge_less_discount_extension_aed DECIMAL(20, 2),
+        total_extension_charge_aed DECIMAL(20, 2),
+
         running_total_booking_count BIGINT,
         running_total_booking_charge_aed DECIMAL(20, 2),
-        running_total_booking_charge_less_discount_aed DECIMAL(20, 2)
+        running_total_booking_charge_less_discount_aed DECIMAL(20, 2),
+        running_total_booking_charge_less_discount_extension_aed DECIMAL(20, 2),
+        running_total_extension_charge_aed DECIMAL(20, 2)
     );
     
     OPEN cur_pickup_month;
@@ -109,9 +115,14 @@ BEGIN
                 pbg.count AS count,
                 REPLACE(pbg.total_booking_charge_aed, ',', '') AS total_booking_charge_aed,
                 REPLACE(pbg.total_booking_charge_less_discount_aed, ',', '') AS  total_booking_charge_less_discount_aed,
+                REPLACE(pbg.total_booking_charge_less_discount_extension_aed, ',', '') AS  total_booking_charge_less_discount_extension_aed,
+                REPLACE(pbg.total_extension_charge_aed, ',', '') AS  total_extension_charge_aed,
+
                 REPLACE(pbg.running_total_booking_count, ',', '') AS running_total_booking_count,
                 REPLACE(pbg.running_total_booking_charge_aed, ',', '') AS running_total_booking_charge_aed,
-                REPLACE(pbg.running_total_booking_charge_less_discount_aed, ',', '') AS running_total_booking_charge_less_discount_aed
+                REPLACE(pbg.running_total_booking_charge_less_discount_aed, ',', '') AS running_total_booking_charge_less_discount_aed,
+                REPLACE(pbg.running_total_booking_charge_less_discount_extension_aed, ',', '') AS running_total_booking_charge_less_discount_extension_aed,
+                REPLACE(pbg.running_total_extension_charge_aed, ',', '') AS running_total_extension_charge_aed
 
             FROM calendar_table AS c
 
@@ -153,7 +164,6 @@ BEGIN
 
     CREATE TABLE pacing_final_data AS
     SELECT
-        -- pickup_month_year
         CASE
             WHEN pickup_month_year IS NULL THEN (
                 SELECT inner_table.pickup_month_year
@@ -183,6 +193,8 @@ BEGIN
         COALESCE(count, 0) AS count,
         COALESCE(total_booking_charge_aed, 0) AS total_booking_charge_aed,
         COALESCE(total_booking_charge_less_discount_aed, 0) AS total_booking_charge_less_discount_aed,
+        COALESCE(total_booking_charge_less_discount_extension_aed, 0) AS total_booking_charge_less_discount_extension_aed,
+        COALESCE(total_extension_charge_aed, 0) AS total_extension_charge_aed,
         
         -- running_count
         CASE
@@ -221,7 +233,33 @@ BEGIN
                 ORDER BY inner_table.booking_date DESC
                 LIMIT 1)
             ELSE running_total_booking_charge_less_discount_aed
-            END AS running_total_booking_charge_less_discount_aed
+            END AS running_total_booking_charge_less_discount_aed,
+        
+        -- running_total_booking_charge_less_discount_extension_aed
+        CASE
+            WHEN running_total_booking_charge_less_discount_extension_aed IS NULL THEN (
+                SELECT inner_table.running_total_booking_charge_less_discount_extension_aed
+                FROM pacing_base_all_calendar_dates AS inner_table
+                WHERE inner_table.grouping_id = pacing_base_all_calendar_dates.grouping_id
+                AND inner_table.booking_date < pacing_base_all_calendar_dates.booking_date
+                AND inner_table.running_total_booking_charge_less_discount_extension_aed IS NOT NULL
+                ORDER BY inner_table.booking_date DESC
+                LIMIT 1)
+            ELSE running_total_booking_charge_less_discount_extension_aed
+            END AS running_total_booking_charge_less_discount_extension_aed,
+        
+        -- running_total_extension_charge_aed
+        CASE
+            WHEN running_total_extension_charge_aed IS NULL THEN (
+                SELECT inner_table.running_total_extension_charge_aed
+                FROM pacing_base_all_calendar_dates AS inner_table
+                WHERE inner_table.grouping_id = pacing_base_all_calendar_dates.grouping_id
+                AND inner_table.booking_date < pacing_base_all_calendar_dates.booking_date
+                AND inner_table.running_total_extension_charge_aed IS NOT NULL
+                ORDER BY inner_table.booking_date DESC
+                LIMIT 1)
+            ELSE running_total_extension_charge_aed
+            END AS running_total_extension_charge_aed
             
     FROM pacing_base_all_calendar_dates;
     
