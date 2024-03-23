@@ -33,17 +33,8 @@ CREATE TABLE IF NOT EXISTS key_metrics_base (
     -- DAYS CALCULATION
     minutes_rented DECIMAL(20, 4) AS (TIMESTAMPDIFF(MINUTE, pickup_datetime, return_datetime)),
     days_rented DECIMAL(20, 4) AS ((TIMESTAMPDIFF(MINUTE, pickup_datetime, return_datetime)) / total_minutes_in_day) STORED,
-
     days_less_extension_days DECIMAL(10, 4) AS (((TIMESTAMPDIFF(MINUTE, pickup_datetime, return_datetime)) / total_minutes_in_day) - extension_days),
-
     extension_days DECIMAL(10, 4),
-
-    -- REVENUE CALCULATION
-    booking_charge_aed DOUBLE,
-    booking_charge_less_discount_aed DOUBLE,
-
-    booking_charge_less_discount_extension_aed DOUBLE,
-    extension_charge_aed DOUBLE,
 
     -- PICKUP MINUTE FRACTION CALC
     pickup_hours_to_midnight INT AS (HOUR(TIMEDIFF('24:00:00', pickup_time))) VIRTUAL,
@@ -57,12 +48,18 @@ CREATE TABLE IF NOT EXISTS key_metrics_base (
     return_total_minutes_to_midnight INT AS (return_hours_to_midnight * 60 + return_minutes_to_midnight) VIRTUAL,
     return_fraction_of_day DECIMAL(5, 4) AS (return_total_minutes_to_midnight / total_minutes_in_day ) STORED,
 
+    -- REVENUE CALCULATION
+    booking_charge_aed DOUBLE,
+    booking_charge_less_discount_aed DOUBLE,
+    booking_charge_less_discount_extension_aed DOUBLE,
+    extension_charge_aed DOUBLE,
+
     -- BOOKING CHARGE AED PER DAY
     booking_charge_aed_per_day DOUBLE AS (
         CASE
             WHEN pickup_date = return_date THEN booking_charge_aed
             WHEN pickup_date <> return_date AND days_rented <= 2 THEN booking_charge_aed / 2
-            WHEN days_rented > 0 THEN booking_charge_aed / (days_rented)
+            WHEN days_rented > 0 THEN booking_charge_aed / ROUND((days_rented + 1), 0)
             ELSE 0            
         END
     ),
@@ -71,26 +68,8 @@ CREATE TABLE IF NOT EXISTS key_metrics_base (
     booking_charge_less_discount_aed_per_day DOUBLE AS (
         CASE
             WHEN pickup_date = return_date THEN booking_charge_less_discount_aed
-            WHEN pickup_date <> return_date AND days_rented <= 2 THEN booking_charge_less_discount_aed / 2      
-            WHEN days_rented > 0 THEN booking_charge_less_discount_aed / (days_rented)
-            ELSE 0
-        END
-    ),
-
-    -- BOOKING CHARGE LESS DISCOUNT LESS EXTENSION AED PER DAY
-    booking_charge_less_discount_extension_aed_per_day DOUBLE AS (
-        CASE
-            WHEN pickup_date = return_date OR days_less_extension_days = 1 THEN booking_charge_less_discount_extension_aed
-            WHEN pickup_date <> return_date AND days_less_extension_days >= 2 THEN booking_charge_less_discount_extension_aed / (ROUND(days_less_extension_days, 0) + 1)
-            ELSE 0
-        END
-    ),
-
-    -- EXTENSION CHARGE AED PER DAY CALC
-    extension_charge_aed_per_day DOUBLE AS (
-        CASE
-            WHEN pickup_date = return_date OR extension_days = 1 THEN extension_charge_aed
-            WHEN pickup_date <> return_date AND extension_days >= 2 THEN extension_charge_aed / extension_days
+            WHEN pickup_date <> return_date AND days_rented <= 2 THEN booking_charge_less_discount_aed / 2
+            WHEN days_rented > 0 THEN booking_charge_less_discount_aed / ROUND((days_rented + 1), 0)
             ELSE 0
         END
     ),
@@ -110,7 +89,6 @@ INSERT INTO key_metrics_base (booking_id, status, booking_type, vendor, is_repea
 SELECT booking_id, status, booking_type, marketplace_or_dispatch AS vendor, repeated_user AS is_repeat, deliver_country AS country, booking_date, pickup_date, pickup_datetime, return_date, return_datetime, extension_days, booking_charge_aed, booking_charge_less_discount_aed, extension_charge_aed, booking_charge_less_discount_extension_aed
 
 FROM ezhire_booking_data.booking_data;
-
 
 ALTER TABLE key_metrics_base
     ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;

@@ -17,8 +17,10 @@ SELECT
     CONCAT('AED ', FORMAT(SUM(booking_charge_aed_rev_allocation), 0)) AS booking_charge_aed,
 
     CONCAT('AED ', FORMAT(SUM(booking_charge_less_discount_extension_aed_allocation), 0)) AS booking_charge_less_discount_extension_aed,
-    CONCAT('AED ', FORMAT(SUM(extension_charge_aed_per_day_allocation), 0)) AS extension_charge_aed
-
+    CONCAT('AED ', FORMAT(SUM(extension_charge_aed_per_day_allocation), 0)) AS extension_charge_aed,
+    
+    CONCAT('AED ', FORMAT(SUM(booking_charge_less_discount_extension_aed_allocation) + SUM(extension_charge_aed_per_day_allocation), 0)) AS total_booking_charge_extension
+    
 FROM key_metrics_core_onrent_days
 GROUP BY year, month
 ORDER BY year ASC, month ASC;
@@ -40,7 +42,10 @@ SELECT
     CONCAT('AED ', FORMAT(SUM(booking_charge_aed_rev_allocation), 0)) AS booking_charge_aed,
 
     CONCAT('AED ', FORMAT(SUM(booking_charge_less_discount_extension_aed_allocation), 0)) AS booking_charge_less_discount_extension_aed,
-    CONCAT('AED ', FORMAT(SUM(extension_charge_aed_per_day_allocation), 0)) AS extension_charge_aed
+    CONCAT('AED ', FORMAT(SUM(extension_charge_aed_per_day_allocation), 0)) AS extension_charge_aed,
+    
+    CONCAT('AED ', FORMAT(SUM(booking_charge_less_discount_extension_aed_allocation) + SUM(extension_charge_aed_per_day_allocation), 0)) AS total_booking_charge_extension
+    
 FROM key_metrics_core_onrent_days
 GROUP BY year, month, day
 ORDER BY year ASC, month ASC, day ASC;
