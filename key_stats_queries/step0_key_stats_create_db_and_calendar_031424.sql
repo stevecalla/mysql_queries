@@ -8,7 +8,6 @@ CREATE DATABASE ezhire_key_metrics;
 USE ezhire_key_metrics;
 
 -- ****************** CREATE CALENDAR TABLE START ********************
--- Create the calendar_table
 CREATE TABLE calendar_table (
     calendar_date DATE PRIMARY KEY,
     year INT,
@@ -25,7 +24,6 @@ CREATE TABLE calendar_table (
 
 SHOW INDEXES FROM calendar_table;
 
-
 -- Insert data for the years 2015 and the last day of the current year
 INSERT INTO calendar_table (calendar_date, year, quarter, month, week_of_year, day_of_year, day_of_week, day_of_week_numeric)
 SELECT
@@ -38,10 +36,6 @@ SELECT
     DAYNAME(date_seq),
     DAYOFWEEK(date_seq)
 
-    -- DAYNAME(date_seq),
-    -- DAYOFWEEK(date_seq),
-    -- WEEK(date_seq, 1),
-    -- DAYOFYEAR(date_seq)
 FROM (
     SELECT
         DATE_ADD('2015-01-01', INTERVAL seq DAY) AS date_seq
@@ -59,4 +53,3 @@ FROM (
 
 -- Select all records with a limit of 10
 SELECT * FROM calendar_table;
--- ****************** END --- CREATE CALENDAR TABLE ---- END ********************

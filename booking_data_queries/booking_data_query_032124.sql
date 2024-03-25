@@ -1,4 +1,4 @@
-SET  @str_date = '2024-01-01',@end_date = '2024-01-01';
+SET  @str_date = '2024-01-01',@end_date = '2024-12-01';
 
 -- CHANGE LOG ********* START **************
 -- extension revenue adjustment
@@ -580,6 +580,28 @@ FROM
                     AND m.message LIKE '%Dear Partner%') 
                 AS extension_charge,
 
+            ((SELECT 
+                    SUM(CASE
+                            WHEN charge_type_id IN (14) THEN -(total_charge)
+                            ELSE (total_charge)
+                        END)
+                FROM
+                    myproject.rental_charges cc
+                WHERE
+                    cc.booking_id = b.id
+                        AND cc.charge_type_id IN (3 , 4, 11, 15, 16, 17, 18, 19, 21, 23, 25, 26, 29, 30, 31, 32, 36, 37, 38, 39, 40, 41, 48, 49, 50, 51, 52, 56, 57, 14))) -
+            (SELECT 
+                SUM(extension_amount)
+                FROM rental_messagesuser m
+                WHERE 
+                    m.booking_id = b.id
+                    AND (m.subject LIKE '%exten%' OR m.subject=CONCAT('Late Rental Return for Booking#', m.booking_id))
+                    AND m.extension_days > 0
+                    AND m.message LIKE '%Dear Partner%'
+
+            )
+                AS booking_charge_less_discount_less_extension_charge,
+
             (SELECT 
                 SUM(extension_days)
                 FROM rental_messagesuser m
@@ -681,6 +703,9 @@ FROM
         DATE(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) BETWEEN @str_date AND @end_date
 		AND COALESCE(b.vendor_id,'') NOT IN (33, 5 , 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
 		AND (LOWER(au.first_name) NOT LIKE '%test%' AND LOWER(au.last_name) NOT LIKE '%test%' AND LOWER(au.username) NOT LIKE '%test%' AND LOWER(au.email) NOT LIKE '%test%')
+    
+    -- HAVING booking_charge_less_discount < 0
+    -- HAVING booking_charge_less_discount_less_extension_charge < 0
 
 		-- -- AND COALESCE(b.vendor_id,'') IN (33, 5 , 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
         -- -- AND b.id = '240842'
@@ -691,6 +716,7 @@ FROM
 	-- AND pc.Promo_Code IS NOT NULL
 	-- AND b.id = "218138"
     -- WHERE b.id IN ("246414", "240667")
+    -- WHERE b.id IN ("240667", "246876", "240842", "246867", "248667")
 	-- FOR TESTING / AUDITING ******* END *********
 	
 	-- FOR USE IN NODE / JAVASCRIPT AS SQL SET VARIABLES DON'T WORK ******* START *********

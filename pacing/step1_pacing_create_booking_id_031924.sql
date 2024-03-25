@@ -17,7 +17,9 @@ SELECT
     
     1 AS count,
     booking_charge_aed,
-    booking_charge_less_discount_aed
+    booking_charge_less_discount_aed,
+    booking_charge_less_discount_extension_aed,
+    extension_charge_aed
 
 FROM ezhire_booking_data.booking_data 
 WHERE status NOT LIKE '%Cancel%'

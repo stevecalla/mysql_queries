@@ -40,7 +40,15 @@ SELECT
             WHEN ct.calendar_date BETWEEN km.pickup_date AND km.return_date THEN 1
             ELSE 0
         END
-    ) AS days_on_rent_fraction,  
+    ) AS days_on_rent_fraction,
+
+    SUM(
+        CASE
+            WHEN ct.calendar_date = km.pickup_date THEN 1
+            WHEN ct.calendar_date > km.pickup_date AND ct.day_of_year = 1 THEN 1
+            ELSE 0
+        END
+    ) AS trans_on_rent_count,  
 
     -- BOOKING COUNT
     SUM(
@@ -326,6 +334,7 @@ SELECT
     FORMAT(SUM(pickup_count), 0) AS pickup_count,
     FORMAT(SUM(return_count), 0) AS return_count,
 
+    FORMAT(SUM(trans_on_rent_count),  0) as trans_on_rent_count,
     FORMAT(SUM(days_on_rent_fraction), 0) AS days_on_rent_fraction,
     FORMAT(SUM(days_on_rent_whole_day), 0) AS days_on_rent_whole_day,
 
@@ -360,6 +369,7 @@ SELECT
     FORMAT(SUM(pickup_count), 0) AS pickup_count,
     FORMAT(SUM(return_count), 0) AS return_count,
 
+    FORMAT(SUM(trans_on_rent_count),  0) as trans_on_rent_count,
     FORMAT(SUM(days_on_rent_fraction), 0) AS days_on_rent_fraction,
     FORMAT(SUM(days_on_rent_whole_day), 0) AS days_on_rent_whole_day,
 

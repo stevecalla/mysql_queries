@@ -4,8 +4,10 @@ SELECT
 FROM myproject.rental_charges
 -- WHERE booking_id IN ("240667") -- possible extension
 -- WHERE booking_id IN ('245689') -- refund
--- WHERE booking_id IN ('246876') -- possible extension
-WHERE booking_id IN ('240685','244787','245399','245689','246867','246876','258479','258490','258491')
+-- WHERE booking_id IN ('240668') -- possible extension
+-- WHERE booking_id IN ('246165')
+WHERE booking_id IN ("247086")
+-- WHERE booking_id IN ('240685','244787','245399','245689','246867','246876','258479','258490','258491')
 ORDER BY booking_id, from_date
 LIMIT 200;
 
