@@ -192,7 +192,7 @@ SELECT
 
     -- rental charge less discount aed
     IFNULL(rent_charge, 0) AS rent_charge,
-    IFNULL(((rent_charge - discount_charge - extension_charge) * tb.conversion_rate), (rent_charge * tb.conversion_rate)) AS rent_charge_less_discount_extension_aed,
+    IFNULL(((rent_charge - discount_charge - extension_charge) * tb.conversion_rate), IFNULL((rent_charge - extension_charge) * tb.conversion_rate, rent_charge * tb. conversion_rate)) AS rent_charge_less_discount_extension_aed,
 
     IFNULL(extra_day_charge, 0) AS extra_day_charge,
     IFNULL(delivery_charge, 0) AS delivery_charge,
@@ -225,11 +225,11 @@ SELECT
     is_extended,
     Promo_Code AS promo_code,
     promo_code_discount_amount,
-    IFNULL(IF(DATE_FORMAT(promocode_created_date,
-                        '%Y-%m-%d %H:%i:%s') = '0000-00-00 00:00:00',
+    IFNULL(IF(DATE_FORMAT(promocode_created_date, 
+                '%Y-%m-%d %H:%i:%s') = '0000-00-00 00:00:00',
                 '1900-01-01 12:00:00',
                 promocode_created_date),
-            '1900-01-01 12:00:00') AS promocode_created_date,
+                '1900-01-01 12:00:00') AS promocode_created_date,
     promo_code_description,
     
     car_avail_id, -- ADDED
@@ -720,6 +720,7 @@ FROM
 	-- AND pc.Promo_Code IS NOT NULL
 	-- AND b.id = "218138"
     -- WHERE b.id IN ("246414", "240667")
+    -- WHERE b.id IN ("247089")
     -- WHERE b.id IN ("240667", "246876", "240842", "246867", "248667")
 	-- FOR TESTING / AUDITING ******* END *********
 	
