@@ -78,29 +78,8 @@ JOIN (SELECT
         @prev_month_year := NULL
     ) AS init;
 
+-- WARNINGS
+SHOW WARNINGS;
 
 -- Select all records
 SELECT * FROM pacing_base_groupby;
-
--- SMALL SCALE VERSION OF BELOW
--- SELECT
---         pickup_month_year,
---         booking_date,
---         days_from_first_day_of_month,
---         count,
---         @running_total := @running_total + count AS running_total_booking_count
---         FROM (
---         SELECT
---                 pb.pickup_month_year,
---                 pb.booking_date,
---                 pb.days_from_first_day_of_month,
---                 SUM(count) AS count
---         FROM ezhire_pacing_metrics.pacing_base pb
---         GROUP BY 
---                 pb.pickup_month_year,
---                 pb.booking_date,  
---                 pb.days_from_first_day_of_month
---         ORDER BY pb.pickup_month_year ASC
---         LIMIT 10
---         ) AS subquery
--- JOIN (SELECT @running_total := 0) AS init;
