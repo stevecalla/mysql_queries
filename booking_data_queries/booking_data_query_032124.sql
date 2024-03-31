@@ -1,3 +1,5 @@
+USE myproject;
+
 SET  @str_date = '2024-01-01',@end_date = '2024-01-01';
 
 -- CHANGE LOG ********* START **************
@@ -192,7 +194,14 @@ SELECT
 
     -- rental charge less discount aed
     IFNULL(rent_charge, 0) AS rent_charge,
-    IFNULL(((rent_charge - discount_charge - extension_charge) * tb.conversion_rate), IFNULL((rent_charge - extension_charge) * tb.conversion_rate, rent_charge * tb. conversion_rate)) AS rent_charge_less_discount_extension_aed,
+    -- IFNULL(((rent_charge - discount_charge - extension_charge) * tb.conversion_rate), IFNULL((rent_charge - extension_charge) * tb.conversion_rate, rent_charge * tb. conversion_rate)) AS rent_charge_less_discount_extension_aed,
+    CASE 
+        WHEN (rent_charge - discount_charge - extension_charge) * tb.conversion_rate THEN (rent_charge - discount_charge - extension_charge) * tb.conversion_rate
+        WHEN (rent_charge - discount_charge) * tb.conversion_rate THEN (rent_charge - discount_charge) * tb.conversion_rate
+        WHEN (rent_charge - extension_charge) * tb.conversion_rate THEN (rent_charge - extension_charge) * tb.conversion_rate
+        ELSE rent_charge
+    END AS rent_charge_less_discount_extension_aed, -- using case statement due to null values
+
 
     IFNULL(extra_day_charge, 0) AS extra_day_charge,
     IFNULL(delivery_charge, 0) AS delivery_charge,
@@ -722,6 +731,7 @@ FROM
     -- WHERE b.id IN ("246414", "240667")
     -- WHERE b.id IN ("247089")
     -- WHERE b.id IN ("240667", "246876", "240842", "246867", "248667")
+    -- WHERE b.id IN ("260575", "199506", "200086", "237968") -- evaluate rental charge issues
 	-- FOR TESTING / AUDITING ******* END *********
 	
 	-- FOR USE IN NODE / JAVASCRIPT AS SQL SET VARIABLES DON'T WORK ******* START *********
