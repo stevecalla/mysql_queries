@@ -37,14 +37,30 @@ SELECT
     ct.quarter AS quarter,
     ct.month AS month,
     ct.week_of_year AS week,
-    ct.day_of_year AS day
+    ct.day_of_year AS day,
+    km.max_booking_datetime,
+
+    -- CALC IS_TODAY
+    CASE
+        WHEN ct.calendar_date = DATE_FORMAT(km.max_booking_datetime, '%Y-%m-%d') THEN "yes"
+        ELSE "no"
+    END AS is_today
 
 FROM
     calendar_table ct
+-- Inner join to filter rows based on specific criteria
+INNER JOIN
+    key_metrics_base km
+    ON ct.calendar_date >= @booking_date -- Ensure calendar date is after booking date
+    AND km.return_date >= @return_date -- Ensure return date is after or equal to specified return date
+    AND ct.calendar_date >= km.booking_date -- Ensure calendar date is after or equal to booking date
+    AND ct.calendar_date <= km.return_date -- Ensure calendar date is before or equal to return date
+    AND km.status NOT LIKE @status -- Exclude rows with status matching the specified pattern
 WHERE
     calendar_date >= @booking_date
 GROUP BY
-    ct.calendar_date
+    ct.calendar_date, km.max_booking_datetime
+    -- ct.calendar_date
 ORDER BY
     ct.calendar_date ASC;
 
@@ -75,7 +91,6 @@ SELECT
 
 FROM
     calendar_table ct
-   
 -- Inner join to filter rows based on specific criteria
 INNER JOIN
     key_metrics_base km

@@ -1,3 +1,5 @@
+USE myproject;
+
 SET  @str_date = '2024-01-01',@end_date = '2024-12-01';
 
 -- CHANGE LOG ********* START **************
@@ -189,7 +191,19 @@ SELECT
     IFNULL(insurance_type, 0) AS insurance_type,
     IFNULL(millage_rate, 0) AS millage_rate,
     IFNULL(millage_cap_km, 0) AS millage_cap_km,
+
+    -- rental charge less discount aed
     IFNULL(rent_charge, 0) AS rent_charge,
+    -- IFNULL(((rent_charge - discount_charge - extension_charge) * tb.conversion_rate), IFNULL((rent_charge - extension_charge) * tb.conversion_rate, rent_charge * tb. conversion_rate)) AS rent_charge_less_discount_extension_aed,
+    CASE 
+        WHEN (rent_charge - discount_charge - extension_charge) * tb.conversion_rate THEN (rent_charge - discount_charge - extension_charge) * tb.conversion_rate
+        WHEN (rent_charge - discount_charge) * tb.conversion_rate THEN (rent_charge - discount_charge) * tb.conversion_rate
+        WHEN (rent_charge - extension_charge) * tb.conversion_rate THEN (rent_charge - extension_charge) * tb.conversion_rate
+        WHEN rent_charge IS NULL THEN 0
+        ELSE rent_charge
+    END AS rent_charge_less_discount_extension_aed, -- using case statement due to null values
+
+
     IFNULL(extra_day_charge, 0) AS extra_day_charge,
     IFNULL(delivery_charge, 0) AS delivery_charge,
     IFNULL(collection_charge, 0) AS collection_charge,
@@ -206,11 +220,34 @@ SELECT
     IFNULL(booking_charge_less_discount, 0) AS booking_charge_less_discount,
     IFNULL(booking_charge * tb.conversion_rate, 0) AS booking_charge_aed, -- converted from local currency to UAE/AED
     IFNULL(booking_charge_less_discount * tb.conversion_rate, 0) AS booking_charge_less_discount_aed, -- converted from local currency to UAE/AED
+    
+    -- IFNULL(booking_charge - extension_charge, booking_charge) AS booking_charge_less_extension, -- ADDED
+    CASE 
+        WHEN booking_charge - extension_charge THEN booking_charge - extension_charge
+        WHEN booking_charge IS NULL THEN 0
+        ELSE booking_charge
+    END AS booking_charge_less_extension, -- using case statement due to null values
 
-    IFNULL(booking_charge - extension_charge, booking_charge) AS booking_charge_less_extension, -- ADDED
-    IFNULL(booking_charge_less_discount - extension_charge, booking_charge_less_discount) AS booking_charge_less_discount_extension,  -- ADDED
-    IFNULL((booking_charge - extension_charge) * tb.conversion_rate, (booking_charge * tb.conversion_rate)) AS booking_charge_less_extension_aed,  -- ADDED currency conversion
-    IFNULL((booking_charge_less_discount - extension_charge) * tb.conversion_rate, (booking_charge_less_discount * tb.conversion_rate)) AS booking_charge_less_discount_extension_aed, -- ADDED currency conversion
+    -- IFNULL(booking_charge_less_discount - extension_charge, booking_charge_less_discount) AS booking_charge_less_discount_extension,  -- ADDED
+    CASE 
+        WHEN booking_charge_less_discount - extension_charge THEN booking_charge_less_discount - extension_charge
+        WHEN booking_charge_less_discount IS NULL THEN 0
+        ELSE booking_charge_less_discount
+    END AS booking_charge_less_discount_extension, -- using case statement due to null values
+
+    -- IFNULL((booking_charge - extension_charge) * tb.conversion_rate, (booking_charge * tb.conversion_rate)) AS booking_charge_less_extension_aed,  -- ADDED currency conversion
+    CASE 
+        WHEN ((booking_charge - extension_charge) * tb.conversion_rate) THEN ((booking_charge - extension_charge) * tb.conversion_rate)
+        WHEN booking_charge IS NULL THEN 0
+        ELSE booking_charge * tb.conversion_rate
+    END AS booking_charge_less_extension_aed, -- using case statement due to null values
+
+    -- IFNULL((booking_charge_less_discount - extension_charge) * tb.conversion_rate, (booking_charge_less_discount * tb.conversion_rate)) AS booking_charge_less_discount_extension_aed, -- ADDED currency conversion
+    CASE 
+        WHEN ((booking_charge_less_discount - extension_charge) * tb.conversion_rate) THEN ((booking_charge_less_discount - extension_charge) * tb.conversion_rate)
+        WHEN booking_charge IS NULL THEN 0
+        ELSE (booking_charge_less_discount * tb.conversion_rate)
+    END AS booking_charge_less_discount_extension_aed, -- using case statement due to null values
 
     IFNULL(base_rental_revenue, 0) AS base_rental_revenue,
     IFNULL(non_rental_charge, 0) AS non_rental_charge,
@@ -221,11 +258,11 @@ SELECT
     is_extended,
     Promo_Code AS promo_code,
     promo_code_discount_amount,
-    IFNULL(IF(DATE_FORMAT(promocode_created_date,
-                        '%Y-%m-%d %H:%i:%s') = '0000-00-00 00:00:00',
+    IFNULL(IF(DATE_FORMAT(promocode_created_date, 
+                '%Y-%m-%d %H:%i:%s') = '0000-00-00 00:00:00',
                 '1900-01-01 12:00:00',
                 promocode_created_date),
-            '1900-01-01 12:00:00') AS promocode_created_date,
+                '1900-01-01 12:00:00') AS promocode_created_date,
     promo_code_description,
     
     car_avail_id, -- ADDED
@@ -249,8 +286,10 @@ SELECT
         '"',
         '') AS delivery_location,
     deliver_method,
-    delivery_lat,
-    delivery_lng,
+    
+    IFNULL(delivery_lat, collection_lat) AS delivery_lat,
+    IFNULL(delivery_lng, collection_lng) AS delivery_lng,
+
     REPLACE(REPLACE(REPLACE(collection_location,
                 '
                 ',
@@ -260,10 +299,12 @@ SELECT
         '"',
         '') AS collection_location,
     collection_method,
+
     IFNULL(SUBSTRING_INDEX(collection_lat, ',', 1),
             collection_lat) AS collection_lat,
     IFNULL(SUBSTRING_INDEX(collection_lng, ',', 1),
             collection_lat) AS collection_lng,
+
     nps_score,
 	NULLIF(REPLACE(REPLACE(REPLACE(nps_comment, '\n', ''), ',', ''), '"', ''), '') AS nps_comment
 FROM
@@ -519,6 +560,7 @@ FROM
                 WHERE
                     cc.booking_id = b.id
                         AND cc.charge_type_id = 14) AS discount_charge,
+            -- 
             (SELECT 
                     SUM(total_charge)
                 FROM
@@ -681,6 +723,7 @@ FROM
                     rf.booking_id = b.id
                 ORDER BY rf.id DESC
                 LIMIT 1) nps_comment
+                
     FROM myproject.rental_car_booking2 b
     
     INNER JOIN myproject.rental_fuser f ON f.user_ptr_id = b.owner_id
@@ -699,10 +742,10 @@ FROM
     LEFT JOIN myproject.auth_user au ON au.id = b.owner_id
 
 	-- FOR USE IN MYSQL WITH VARIABLES IN LINE 1
-	WHERE 
-        DATE(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) BETWEEN @str_date AND @end_date
-		AND COALESCE(b.vendor_id,'') NOT IN (33, 5 , 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
-		AND (LOWER(au.first_name) NOT LIKE '%test%' AND LOWER(au.last_name) NOT LIKE '%test%' AND LOWER(au.username) NOT LIKE '%test%' AND LOWER(au.email) NOT LIKE '%test%')
+	-- WHERE 
+    --     DATE(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) BETWEEN @str_date AND @end_date
+	-- 	AND COALESCE(b.vendor_id,'') NOT IN (33, 5 , 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
+	-- 	AND (LOWER(au.first_name) NOT LIKE '%test%' AND LOWER(au.last_name) NOT LIKE '%test%' AND LOWER(au.username) NOT LIKE '%test%' AND LOWER(au.email) NOT LIKE '%test%')
     
     -- HAVING booking_charge_less_discount < 0
     -- HAVING booking_charge_less_discount_less_extension_charge < 0
@@ -716,7 +759,12 @@ FROM
 	-- AND pc.Promo_Code IS NOT NULL
 	-- AND b.id = "218138"
     -- WHERE b.id IN ("246414", "240667")
+    -- WHERE b.id IN ("264404", "240667", "257685")
+    -- WHERE b.id IN ("247089")
+    WHERE b.id IN ('251982')
+    -- WHERE b.id IN ("240667")
     -- WHERE b.id IN ("240667", "246876", "240842", "246867", "248667")
+    -- WHERE b.id IN ("260575", "199506", "200086", "237968") -- evaluate rental charge issues
 	-- FOR TESTING / AUDITING ******* END *********
 	
 	-- FOR USE IN NODE / JAVASCRIPT AS SQL SET VARIABLES DON'T WORK ******* START *********

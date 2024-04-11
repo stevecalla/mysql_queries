@@ -1,3 +1,5 @@
+USE ezhire_key_metrics;
+
 -- View the key_metrics table
 SELECT * FROM key_metrics LIMIT 10;
 
@@ -30,7 +32,6 @@ SELECT
 FROM key_metrics_data
 GROUP BY year, month WITH ROLLUP
 ORDER BY year ASC, month ASC;
-
 
 -- View the key_metrics_core_onrent_days table
 SELECT * FROM key_metrics_data;

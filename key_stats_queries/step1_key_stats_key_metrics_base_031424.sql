@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS key_metrics_base (
 
     -- BOOKING DATE FIELD
     booking_date DATE,
+    max_booking_datetime DATETIME,
 
     -- PICKUP DATE FIELDS
     pickup_date DATE,
@@ -84,9 +85,9 @@ CREATE TABLE IF NOT EXISTS key_metrics_base (
 SHOW INDEXES FROM key_metrics_base;
 
 -- Step 2: Insert data from ezhire_booking_data.booking_data into key_metrics table
-INSERT INTO key_metrics_base (booking_id, status, booking_type, vendor, is_repeat, country, booking_date, pickup_date, pickup_datetime, return_date, return_datetime, extension_days, booking_charge_aed, booking_charge_less_discount_aed, extension_charge_aed, booking_charge_less_discount_extension_aed)
+INSERT INTO key_metrics_base (booking_id, status, booking_type, vendor, is_repeat, country, booking_date, max_booking_datetime, pickup_date, pickup_datetime, return_date, return_datetime, extension_days, booking_charge_aed, booking_charge_less_discount_aed, extension_charge_aed, booking_charge_less_discount_extension_aed)
 
-SELECT booking_id, status, booking_type, marketplace_or_dispatch AS vendor, repeated_user AS is_repeat, deliver_country AS country, booking_date, pickup_date, pickup_datetime, return_date, return_datetime, extension_days, booking_charge_aed, booking_charge_less_discount_aed, extension_charge_aed, booking_charge_less_discount_extension_aed
+SELECT booking_id, status, booking_type, marketplace_or_dispatch AS vendor, repeated_user AS is_repeat, deliver_country AS country, booking_date, max_booking_datetime, pickup_date, pickup_datetime, return_date, return_datetime, extension_days, booking_charge_aed, booking_charge_less_discount_aed, extension_charge_aed, booking_charge_less_discount_extension_aed
 
 FROM ezhire_booking_data.booking_data;
 

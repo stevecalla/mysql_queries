@@ -29,6 +29,13 @@ SELECT
     ct.month AS month,
     ct.week_of_year AS week,
     ct.day_of_year AS day,
+    km.max_booking_datetime,
+
+    -- CALC IS_TODAY
+    CASE
+        WHEN ct.calendar_date = DATE_FORMAT(km.max_booking_datetime, '%Y-%m-%d') THEN "yes"
+        ELSE "no"
+    END AS is_today,
 
     -- TOTAL ON-RENT CALCULATION
     COUNT(km.id) AS days_on_rent_whole_day,
@@ -320,10 +327,9 @@ INNER JOIN
 -- WHERE km.return_date >= @return_date AND km.status NOT LIKE @status
 -- TESTING EXAMPLES ************
 
-GROUP BY
-    ct.calendar_date
-ORDER BY
-    ct.calendar_date ASC;
+GROUP BY km.created_at, ct.calendar_date, km.max_booking_datetime
+
+ORDER BY ct.calendar_date ASC;
 
 -- View key_metrics summary table
 SELECT 
@@ -354,7 +360,6 @@ SELECT
 FROM key_metrics_core_onrent_days
 GROUP BY year, month WITH ROLLUP
 ORDER BY year ASC, month ASC;
-
 
 -- View the key_metrics_core_onrent_days table
 SELECT * FROM key_metrics_core_onrent_days;

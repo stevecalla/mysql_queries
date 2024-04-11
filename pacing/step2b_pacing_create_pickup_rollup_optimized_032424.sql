@@ -9,6 +9,7 @@ DROP TABLE IF EXISTS pacing_base_groupby;
 -- CREATE PACING BASE STATS ROLLUP WITH GROUPING AND SUM
 CREATE TABLE pacing_base_groupby AS
 SELECT
+    max_booking_datetime, -- ADDED
     pickup_month_year,
     booking_date,
     days_from_first_day_of_month,
@@ -53,6 +54,7 @@ SELECT
     @prev_month_year := pickup_month_year AS dummy_variable  -- used to restart the totals for each pickup_month_year combo
 FROM (
     SELECT
+        pb.max_booking_datetime, -- ADDED
         pb.pickup_month_year,
         pb.booking_date,
         pb.days_from_first_day_of_month,
@@ -63,11 +65,12 @@ FROM (
         SUM(extension_charge_aed) AS extension_charge_aed
     FROM ezhire_pacing_metrics.pacing_base pb
     GROUP BY 
+        pb.max_booking_datetime, -- ADDED
         pb.pickup_month_year,
         pb.booking_date,  
         pb.days_from_first_day_of_month
-    ORDER BY pb.pickup_month_year ASC
-    LIMIT 1000
+    ORDER BY pb.pickup_month_year ASC, days_from_first_day_of_month ASC
+    -- LIMIT 1000
 ) AS subquery
 JOIN (SELECT 
         @running_total_booking_count := 0, 
@@ -78,29 +81,8 @@ JOIN (SELECT
         @prev_month_year := NULL
     ) AS init;
 
+-- WARNINGS
+SHOW WARNINGS;
 
 -- Select all records
 SELECT * FROM pacing_base_groupby;
-
--- SMALL SCALE VERSION OF BELOW
--- SELECT
---         pickup_month_year,
---         booking_date,
---         days_from_first_day_of_month,
---         count,
---         @running_total := @running_total + count AS running_total_booking_count
---         FROM (
---         SELECT
---                 pb.pickup_month_year,
---                 pb.booking_date,
---                 pb.days_from_first_day_of_month,
---                 SUM(count) AS count
---         FROM ezhire_pacing_metrics.pacing_base pb
---         GROUP BY 
---                 pb.pickup_month_year,
---                 pb.booking_date,  
---                 pb.days_from_first_day_of_month
---         ORDER BY pb.pickup_month_year ASC
---         LIMIT 10
---         ) AS subquery
--- JOIN (SELECT @running_total := 0) AS init;
