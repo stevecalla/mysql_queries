@@ -3,7 +3,7 @@ SELECT * FROM ezhire_booking_data.booking_data; -- 252,081 	(as of 3/20/24 6pm);
 
 -- KEY METRICS DATA SETS
 USE ezhire_key_metrics;					
-SELECT * FROM calendar_table;  			-- 3,199		"step0_key_stats_create_db_and_calendar_031424.sql"
+SELECT * FROM calendar_table;  			-- 3,999		"step0_key_stats_create_db_and_calendar_031424.sql"
 SHOW INDEXES FROM key_metrics_base;
 SELECT * FROM key_metrics_base;  		-- 251,640	 	"step1_key_stats_key_metrics_base_031424" 			used in all the key_metrics queries below
 

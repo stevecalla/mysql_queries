@@ -1,4 +1,5 @@
 -- THIS VERSION WORKS BUT IT TAKES A WHILE TO EXECUTE
+-- DID NOT UPDATE WITH MAX BOOKING DATE OR IS_TODAY
 
 -- Select database
 USE ezhire_pacing_metrics;
@@ -98,7 +99,7 @@ SELECT
     FORMAT((SELECT SUM(booking_charge_less_discount_aed)
             FROM ezhire_pacing_metrics.pacing_base
             WHERE pickup_month_year = pb.pickup_month_year
-            AND days_from_first_day_of_month <= pb.days_from_first_day_of_month), 0) AS running_total_booking_charge_less_discount_aed,
+            AND days_from_first_day_of_month <= pb.days_from_first_day_of_month), 0) AS running_total_booking_charge_less_discount_aed
 
 FROM ezhire_pacing_metrics.pacing_base pb
 GROUP BY 
@@ -118,7 +119,7 @@ SELECT
     FORMAT((SELECT SUM(booking_charge_less_discount_extension_aed)
             FROM ezhire_pacing_metrics.pacing_base
             WHERE pickup_month_year = pb.pickup_month_year
-            AND days_from_first_day_of_month <= pb.days_from_first_day_of_month), 0) AS running_total_booking_charge_less_discount_extension_aed,
+            AND days_from_first_day_of_month <= pb.days_from_first_day_of_month), 0) AS running_total_booking_charge_less_discount_extension_aed
 
 FROM ezhire_pacing_metrics.pacing_base pb
 GROUP BY 
@@ -203,7 +204,7 @@ INNER JOIN temp_7_running_total_extension_charge_aed t7
 ORDER BY
     t1.pickup_month_year ASC,
     t1.booking_date ASC,
-    t1.days_from_first_day_of_month ASC6
+    t1.days_from_first_day_of_month ASC;
 
 -- -- Drop temporary tables if no longer needed
 -- DROP TEMPORARY TABLE IF EXISTS temp_1_calendar_parts;

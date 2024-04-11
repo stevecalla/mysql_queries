@@ -13,7 +13,7 @@ BEGIN
     DECLARE done INT DEFAULT 0;
 
     DECLARE cur_pickup_month CURSOR FOR
-        -- SELECT DISTINCT pickup_month_year FROM pacing_base_groupby WHERE pickup_month_year LIKE '2023-%' ORDER BY pickup_month_year;
+        -- SELECT DISTINCT pickup_month_year FROM pacing_base_groupby WHERE pickup_month_year LIKE '2023-01%' ORDER BY pickup_month_year;
         SELECT DISTINCT pickup_month_year FROM pacing_base_groupby ORDER BY pickup_month_year;
 
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
@@ -33,6 +33,11 @@ BEGIN
     -- Create the pacing_base_all_calendar_dates table
     CREATE TABLE IF NOT EXISTS pacing_base_all_calendar_dates (
         grouping_id INT,
+        max_booking_datetime DATETIME, -- ADDED
+
+        -- CALC IS_BEFORE_TODAY
+        is_before_today VARCHAR(3), -- ADDED
+
         pickup_month_year VARCHAR(10),
         first_day_of_month VARCHAR(10),
         last_day_of_month DATE,
@@ -105,6 +110,15 @@ BEGIN
         CREATE TABLE temp AS
             SELECT
                 loop_count AS grouping_id,
+                pbg.max_booking_datetime, -- ADDED
+
+                -- CALC IS_BEFORE_TODAY
+                CASE
+                    WHEN days_from_first_day_of_month IS NULL THEN NULL
+                    WHEN days_from_first_day_of_month <= DATE_FORMAT(max_booking_datetime, '%d') + 2 THEN "yes"
+                    ELSE "no"
+                END AS is_before_today, -- ADDED
+
                 pbg.pickup_month_year,
                 CONCAT(pickup_month_year, '-01') AS first_day_of_month,
                 LAST_DAY(CONCAT(pickup_month_year, '-01')) AS last_day_of_month,
@@ -133,7 +147,7 @@ BEGIN
             AND c.calendar_date <= (SELECT MAX(booking_date) FROM pacing_base_groupby WHERE pickup_month_year = pickup_month_year_val)
             AND c.calendar_date >= (SELECT MIN(booking_date) FROM pacing_base_groupby WHERE pickup_month_year = pickup_month_year_val)
 
-            ORDER BY c.calendar_date ASC, pbg.days_from_first_day_of_month ASC;
+            ORDER BY grouping_id, c.calendar_date ASC, pbg.days_from_first_day_of_month ASC;
 
         -- Pause for 1 second
         -- SELECT SLEEP(1);
@@ -165,6 +179,30 @@ BEGIN
     CREATE TABLE pacing_final_data AS
     SELECT
         CASE
+            WHEN max_booking_datetime IS NULL THEN (
+                SELECT inner_table.max_booking_datetime
+                FROM pacing_base_all_calendar_dates AS inner_table
+                WHERE inner_table.grouping_id = pacing_base_all_calendar_dates.grouping_id
+                AND inner_table.booking_date < pacing_base_all_calendar_dates.booking_date
+                AND inner_table.max_booking_datetime IS NOT NULL
+                ORDER BY inner_table.booking_date DESC
+                LIMIT 1)
+            ELSE max_booking_datetime
+        END AS max_booking_datetime, -- ADDED
+
+        CASE
+            WHEN is_before_today IS NULL THEN (
+                SELECT inner_table.is_before_today
+                FROM pacing_base_all_calendar_dates AS inner_table
+                WHERE inner_table.grouping_id = pacing_base_all_calendar_dates.grouping_id
+                AND inner_table.booking_date < pacing_base_all_calendar_dates.booking_date
+                AND inner_table.is_before_today IS NOT NULL
+                ORDER BY inner_table.booking_date DESC
+                LIMIT 1)
+            ELSE is_before_today
+        END AS is_before_today, -- ADDED
+
+        CASE
             WHEN pickup_month_year IS NULL THEN (
                 SELECT inner_table.pickup_month_year
                 FROM pacing_base_all_calendar_dates AS inner_table
@@ -174,8 +212,9 @@ BEGIN
                 ORDER BY inner_table.booking_date DESC
                 LIMIT 1)
             ELSE pickup_month_year
-            END AS pickup_month_year,
-        booking_date,
+        END AS pickup_month_year,
+
+        booking_date, -- populated for all rows
         
         -- days_from_first_day_of_month
         CASE
@@ -188,7 +227,7 @@ BEGIN
                 ORDER BY inner_table.booking_date DESC
                 LIMIT 1)
             ELSE days_from_first_day_of_month
-            END AS days_from_first_day_of_month,
+        END AS days_from_first_day_of_month,
         
         COALESCE(count, 0) AS count,
         COALESCE(total_booking_charge_aed, 0) AS total_booking_charge_aed,
@@ -207,7 +246,7 @@ BEGIN
                 ORDER BY inner_table.booking_date DESC
                 LIMIT 1)
             ELSE running_total_booking_count
-            END AS running_count,
+        END AS running_count,
         
         -- running_total_booking_charge_aed
         CASE
@@ -220,7 +259,7 @@ BEGIN
                 ORDER BY inner_table.booking_date DESC
                 LIMIT 1)
             ELSE running_total_booking_charge_aed
-            END AS running_total_booking_charge_aed,
+        END AS running_total_booking_charge_aed,
         
         -- running_total_booking_charge_less_discount_aed
         CASE
@@ -233,7 +272,7 @@ BEGIN
                 ORDER BY inner_table.booking_date DESC
                 LIMIT 1)
             ELSE running_total_booking_charge_less_discount_aed
-            END AS running_total_booking_charge_less_discount_aed,
+        END AS running_total_booking_charge_less_discount_aed,
         
         -- running_total_booking_charge_less_discount_extension_aed
         CASE
@@ -246,7 +285,7 @@ BEGIN
                 ORDER BY inner_table.booking_date DESC
                 LIMIT 1)
             ELSE running_total_booking_charge_less_discount_extension_aed
-            END AS running_total_booking_charge_less_discount_extension_aed,
+        END AS running_total_booking_charge_less_discount_extension_aed,
         
         -- running_total_extension_charge_aed
         CASE
@@ -259,7 +298,7 @@ BEGIN
                 ORDER BY inner_table.booking_date DESC
                 LIMIT 1)
             ELSE running_total_extension_charge_aed
-            END AS running_total_extension_charge_aed
+        END AS running_total_extension_charge_aed
             
     FROM pacing_base_all_calendar_dates;
     

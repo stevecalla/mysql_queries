@@ -1,24 +1,18 @@
 USE myproject;
 
-SET @str_date = '2024-01-01',@end_date = '2024-12-01';
+SET @str_date = '2024-01-01',@end_date = '2024-01-01';
 
--- CHANGE LOG ********* START **************
+-- ********* START ************ CHANGE LOG
 -- 04/08/24 - update extension definition to (extension days (ED) * customer rate) + (ED * insurance rate) + (ED * additional driver rate) less discount
-
 -- add additional driver rate line 193 and @531
     -- decided to divide additonal driver charge by days
     -- given logic attempt resulted in reconcilation errors
-
 -- adjusted insurance rate to be used in extension charge calc (insurance rate = 0 when insurance charge null/0)
-    -- line @482
-
--- extension charge = (customer rate + insurance rate + additional driver rate) times extension days
-    -- commented out old defintion line @650
-    -- new definitoin @line 250
-
--- figure out discount on extension charge
-
--- CHANGE LOG ********* END **************
+-- added baby seat, GPS and other add ons
+-- adjusted is_extended definition since original def didn't match extended days
+-- 4/10/24 = added max created on field = line 323 & 36
+-- 4/10/24 = added today yes / no field = line 38
+-- ********* END *************** CHANGE LOG
 
 SELECT 
     booking_id,
@@ -26,7 +20,7 @@ SELECT
         ',',
         ' ') AS agreement_number,
 
-	-- BOCROKING DATE FIELDS
+	-- BOOKING DATE FIELDS
     IFNULL(IF(booking_datetime = '0000-00-00 00:00:00',
                 NULL,
                 DATE_FORMAT(booking_datetime, '%Y-%m-%d')),
@@ -35,7 +29,17 @@ SELECT
                 NULL,
                 DATE_FORMAT(booking_datetime, '%Y-%m-%d %H:%i:%s')),
             NULL) AS booking_datetime,
+
+    DATE_FORMAT(max_booking_datetime, '%Y-%m-%d %H:%i:%s') AS max_booking_datetime,
+
+    CASE
+        WHEN DATE_FORMAT(booking_datetime, '%Y-%m-%d') = DATE_FORMAT(max_booking_datetime, '%Y-%m-%d') 
+            THEN 'yes'
+        ELSE 'no'
+    END AS today,
+
     booking_year,
+    booking_quarter,
     booking_month,
     booking_day_of_month,
     booking_week_of_year,
@@ -57,6 +61,7 @@ SELECT
                 DATE_FORMAT(pickup_datetime, '%Y-%m-%d %H:%i:%s')),
             NULL) AS pickup_datetime,
     pickup_year,
+    pickup_quarter,
     pickup_month,
     pickup_day_of_month,
     pickup_week_of_year,
@@ -74,6 +79,7 @@ SELECT
                 DATE_FORMAT(return_datetime, '%Y-%m-%d %H:%i:%s')),
             NULL) AS return_datetime,
     return_year,
+    return_quarter,
     return_month,
     return_day_of_month,
     return_week_of_year,
@@ -172,19 +178,6 @@ SELECT
     IFNULL(extension_days, 0) AS extension_days, -- ADDED
 
     IFNULL(extra_day_calc, 0) AS extra_day_calc,
-    -- IFNULL(myproject.get_rental_rates(tb.booking_id,
-    --                 tb.millage_id,
-    --                 tb.contract_id,
-    --                 tb.drg,
-    --                 tb.wrg,
-    --                 tb.mrg,
-    --                 tb.dr,
-    --                 tb.wr,
-    --                 tb.mr,
-    --                 tb.days,
-    --                 tb.deliver_date_string),
-    --         0) AS customer_rate, -- in local currency
-
     IFNULL(customer_rate, 0) AS customer_rate,
     IFNULL(insurance_rate, 0) AS insurance_rate,
     IFNULL(additional_driver_rate, 0) AS additional_driver_rate,
@@ -196,15 +189,7 @@ SELECT
     IFNULL(millage_cap_km, 0) AS millage_cap_km,
 
     IFNULL(rent_charge, 0) AS rent_charge,
-    CASE 
-        -- EXTENSION CHARGE IS TOTAL WITHOUT DISCOUNT
-        WHEN (customer_rate + insurance_rate + additional_driver_rate + pai_rate) * extension_days > 0
-            THEN (rent_charge + discount_charge - ((customer_rate + insurance_rate + additional_driver_rate + pai_rate) * extension_days)) * tb.conversion_rate
-
-        WHEN discount_charge > 0 THEN (rent_charge - discount_charge) * tb.conversion_rate
-
-        ELSE rent_charge * tb.conversion_rate
-    END AS rent_charge_less_discount_extension_aed, -- using case statement due to null values
+    IFNULL((((days - extension_days) * customer_rate) - (discount_charge)) * tb.conversion_rate, 0) AS rent_charge_less_discount_extension_aed,
 
     IFNULL(extra_day_charge, 0) AS extra_day_charge,
     IFNULL(delivery_charge, 0) AS delivery_charge,
@@ -212,13 +197,13 @@ SELECT
     IFNULL(additional_driver_charge, 0) AS additional_driver_charge,
     IFNULL(insurance_charge, 0) AS insurance_charge,
 
-    IFNULL(pai_charge, 0) AS pai_charge, -- ADDED
-    IFNULL(baby_seat, 0) AS baby_charge, -- ADDED
-    IFNULL(long_distance, 0) AS long_distance, -- ADDED
-    IFNULL(premium_delivery, 0) AS premium_delivery, -- ADDED
-    IFNULL(airport_delivery, 0) AS airport_delivery, -- ADDED
-    IFNULL(gps_charge, 0) AS gps_charge, -- ADDED
-    IFNULL(delivery_update, 0) AS delivery_update, -- ADDED
+    IFNULL(pai_charge, 0) AS pai_charge,
+    IFNULL(baby_seat, 0) AS baby_charge,
+    IFNULL(long_distance, 0) AS long_distance,
+    IFNULL(premium_delivery, 0) AS premium_delivery,
+    IFNULL(airport_delivery, 0) AS airport_delivery,
+    IFNULL(gps_charge, 0) AS gps_charge,
+    IFNULL(delivery_update, 0) AS delivery_update,
 
     IFNULL(intercity_charge, 0) AS intercity_charge,
     IFNULL(millage_charge, 0) AS millage_charge,
@@ -232,66 +217,31 @@ SELECT
 
     IFNULL(booking_charge, 0) AS booking_charge,
     IFNULL(booking_charge_less_discount, 0) AS booking_charge_less_discount,
-    IFNULL(booking_charge * tb.conversion_rate, 0) AS booking_charge_aed, -- converted from local currency to UAE/AED
-    IFNULL(booking_charge_less_discount * tb.conversion_rate, 0) AS booking_charge_less_discount_aed, -- converted from local currency to UAE/AED
-    
-    CASE 
-        WHEN (customer_rate + insurance_rate + additional_driver_rate + pai_rate) * extension_days > 0
-            THEN (booking_charge  + discount_extension_charge - ((customer_rate + insurance_rate + additional_driver_rate + pai_rate) * extension_days))
+    IFNULL(booking_charge * tb.conversion_rate, 0) AS booking_charge_aed,
+    IFNULL(booking_charge_less_discount * tb.conversion_rate, 0) AS booking_charge_less_discount_aed,
 
-        ELSE booking_charge
-    END AS booking_charge_less_extension, -- using case statement due to null values
+    -- EXTENSION CALCS
+    (booking_charge - (((customer_rate + insurance_rate + additional_driver_rate + pai_rate + baby_seat_rate) * extension_days) - discount_extension_charge)) AS booking_charge_less_extension,
 
-    CASE 
-        -- EXTENSION CHARGE IS TOTAL WITHOUT DISCOUNT
-        WHEN (customer_rate + insurance_rate + additional_driver_rate + pai_rate) * extension_days > 0
-            THEN (booking_charge + discount_charge - ((customer_rate + insurance_rate + additional_driver_rate + pai_rate) * extension_days))
+    (booking_charge_less_discount - ((customer_rate + insurance_rate + additional_driver_rate + pai_rate + baby_seat_rate) * extension_days)) AS booking_charge_less_discount_extension,
 
-        WHEN discount_charge > 0 THEN (booking_charge - discount_charge)
+    (booking_charge - (((customer_rate + insurance_rate + additional_driver_rate + pai_rate + baby_seat_rate) * extension_days) - discount_extension_charge)) * tb.conversion_rate AS booking_charge_less_extension_aed,
 
-        ELSE booking_charge
-
-    END AS booking_charge_less_discount_extension, -- using case statement due to null values
-
-    CASE 
-        WHEN (customer_rate + insurance_rate + additional_driver_rate + pai_rate) * extension_days > 0
-            THEN ((booking_charge  + discount_extension_charge - ((customer_rate + insurance_rate + additional_driver_rate + pai_rate) * extension_days)) * tb.conversion_rate) 
-
-        WHEN booking_charge IS NULL THEN 0
-        ELSE booking_charge * tb.conversion_rate
-    END AS booking_charge_less_extension_aed, -- using case statement due to null values
-
-    CASE 
-        -- EXTENSION CHARGE IS TOTAL WITHOUT DISCOUNT
-        WHEN (customer_rate + insurance_rate + additional_driver_rate + pai_rate) * extension_days > 0
-            THEN (booking_charge + discount_charge - ((customer_rate + insurance_rate + additional_driver_rate + pai_rate) * extension_days)) * tb.conversion_rate
-
-        WHEN discount_charge > 0 THEN (booking_charge - discount_charge) * tb.conversion_rate
-
-        ELSE booking_charge * tb.conversion_rate
-    END AS booking_charge_less_discount_extension_aed, -- using case statement due to null values
+    (booking_charge_less_discount - ((customer_rate + insurance_rate + additional_driver_rate + pai_rate + baby_seat_rate) * extension_days)) * tb.conversion_rate AS booking_charge_less_discount_extension_aed,
 
     IFNULL(base_rental_revenue, 0) AS base_rental_revenue,
     IFNULL(non_rental_charge, 0) AS non_rental_charge,
     
-    -- EXTENSTION CHARGE CALC --
-    CASE
-        WHEN ((customer_rate + insurance_rate + additional_driver_rate + pai_rate) * extension_days) - discount_extension_charge
-            THEN ((customer_rate + insurance_rate + additional_driver_rate + pai_rate) * extension_days) - discount_extension_charge
-        WHEN ((customer_rate + insurance_rate + additional_driver_rate + pai_rate) * extension_days)
-            THEN ((customer_rate + insurance_rate + additional_driver_rate + pai_rate) * extension_days)
-        ELSE 0
-    END AS extension_charge,
+    -- EXTENSION CHARGE CALC --
+    (((customer_rate + insurance_rate + additional_driver_rate + pai_rate + baby_seat_rate) * extension_days) - discount_extension_charge) AS extension_charge,
+    
+    (((customer_rate + insurance_rate + additional_driver_rate + pai_rate + baby_seat_rate) * extension_days) - discount_extension_charge) * tb.conversion_rate AS extension_charge_aed,
 
     CASE
-        WHEN (((customer_rate + insurance_rate + additional_driver_rate + pai_rate) * extension_days) - discount_extension_charge) * tb.conversion_rate
-            THEN (((customer_rate + insurance_rate + additional_driver_rate + pai_rate) * extension_days) - discount_extension_charge) * tb.conversion_rate
-        WHEN ((customer_rate + insurance_rate + additional_driver_rate + pai_rate) * extension_days) * tb.conversion_rate
-            THEN ((customer_rate + insurance_rate + additional_driver_rate + pai_rate) * extension_days) * tb.conversion_rate
-        ELSE 0
-    END AS extension_charge_aed,
+        WHEN extension_days >= 1 THEN "YES"
+        ELSE "NO"
+    END AS is_extended,
 
-    is_extended,
     Promo_Code AS promo_code,
     promo_code_discount_amount,
     IFNULL(IF(DATE_FORMAT(promocode_created_date, 
@@ -301,9 +251,9 @@ SELECT
                 '1900-01-01 12:00:00') AS promocode_created_date,
     promo_code_description,
     
-    car_avail_id, -- ADDED
-    car_cat_id, -- ADDED
-    car_cat_name, -- ADDED
+    car_avail_id,
+    car_cat_id,
+    car_cat_name,
     requested_car,
     car_name,
     make,
@@ -358,16 +308,24 @@ FROM
             b.deliver_date_string,
             
             DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d %H:%i:%s') AS booking_datetime,
-            DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y') booking_year,
-            DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%m') booking_month,
-            DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%d') booking_day_of_month,
+            DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y') AS booking_year,
+            QUARTER(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) AS booking_quarter,
+            DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%m') AS booking_month,
+            DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%d') AS booking_day_of_month,
             WEEKOFYEAR(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) AS booking_week_of_year,
             DAYOFWEEK(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) AS booking_day_of_week,
-            DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%W') booking_day_of_week_v2,
-            DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H') booking_time_bucket,
+            DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%W') AS booking_day_of_week_v2,
+            DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H') AS booking_time_bucket,
+            
+            (SELECT 
+                    MAX(DATE_ADD(created_on, INTERVAL 4 HOUR))
+                FROM
+                    myproject.rental_car_booking2
+            ) AS max_booking_datetime,
             
             DATE_FORMAT(CONCAT(STR_TO_DATE(b.deliver_date_string, '%d/%m/%Y'), ' ', b.deliver_time_string), '%Y-%m-%d %H:%i:%s') AS pickup_datetime,
             DATE_FORMAT(CONCAT(STR_TO_DATE(b.deliver_date_string, '%d/%m/%Y'), ' ', b.deliver_time_string), '%Y') pickup_year,
+            QUARTER(STR_TO_DATE(b.deliver_date_string, '%d/%m/%Y')) AS pickup_quarter,
             DATE_FORMAT(CONCAT(STR_TO_DATE(b.deliver_date_string, '%d/%m/%Y'), ' ', b.deliver_time_string), '%m') pickup_month,
             DATE_FORMAT(CONCAT(STR_TO_DATE(b.deliver_date_string, '%d/%m/%Y'), ' ', b.deliver_time_string), '%d') pickup_day_of_month,
             WEEKOFYEAR(CONCAT(STR_TO_DATE(b.deliver_date_string, '%d/%m/%Y'), ' ', b.deliver_time_string)) AS pickup_week_of_year,
@@ -377,6 +335,7 @@ FROM
             
             DATE_FORMAT(CONCAT(STR_TO_DATE(b.return_date_string, '%d/%m/%Y'), ' ', b.return_time_string), '%Y-%m-%d %H:%i:%s') AS return_datetime,
             DATE_FORMAT(CONCAT(STR_TO_DATE(b.return_date_string, '%d/%m/%Y'), ' ', b.return_time_string), '%Y') return_year,
+            QUARTER(STR_TO_DATE(b.return_date_string, '%d/%m/%Y')) AS return_quarter,
             DATE_FORMAT(CONCAT(STR_TO_DATE(b.return_date_string, '%d/%m/%Y'), ' ', b.return_time_string), '%m') return_month,
             DATE_FORMAT(CONCAT(STR_TO_DATE(b.return_date_string, '%d/%m/%Y'), ' ', b.return_time_string), '%d') return_day_of_month,
             WEEKOFYEAR(CONCAT(STR_TO_DATE(b.return_date_string, '%d/%m/%Y'), ' ', b.return_time_string)) AS return_week_of_year,
@@ -441,38 +400,37 @@ FROM
                 ELSE 'NO'
             END) repeated_user,
 
-            (SELECT 
+            IFNULL((SELECT 
                     COUNT(1)
                 FROM
                     myproject.rental_car_booking2 bb
                 WHERE
-                    bb.owner_id = b.owner_id) AS no_of_bookings,
+                    bb.owner_id = b.owner_id), 0) AS no_of_bookings,
 
-            (SELECT 
+            IFNULL((SELECT 
                     COUNT(1)
                 FROM
                     myproject.rental_car_booking2 bb
                 WHERE
                     bb.owner_id = b.owner_id
-                        AND bb.status = 8) AS no_of_cancel_bookings,
+                        AND bb.status = 8), 0) AS no_of_cancel_bookings,
 
-            (SELECT 
+            IFNULL((SELECT 
                     COUNT(1)
                 FROM
                     myproject.rental_car_booking2 bb
                 WHERE
                     bb.owner_id = b.owner_id
-                        AND bb.status = 9) AS no_of_completed_bookings,
+                        AND bb.status = 9), 0) AS no_of_completed_bookings,
 
-            (SELECT 
+            IFNULL((SELECT 
                     COUNT(1)
                 FROM
                     myproject.rental_car_booking2 bb
                 WHERE
                     bb.owner_id = b.owner_id
-                        AND bb.status NOT IN (8 , 9)) AS no_of_started_bookings,
+                        AND bb.status NOT IN (8 , 9)), 0) AS no_of_started_bookings,
             b.owner_id AS customer_id,
-            
             au.first_name AS first_name,
             au.last_name AS last_name,
             au.email as email,
@@ -482,26 +440,28 @@ FROM
 
             TIMESTAMPDIFF(YEAR, STR_TO_DATE(f.date_of_birth, '%d/%m/%Y'), NOW()) age,
 
-            (SELECT 
+            IFNULL((SELECT 
                     name
                 FROM
                     myproject.rental_country ct
                 WHERE
-                    ct.code = dl_country) customer_driving_country,
+                    ct.code = dl_country), 0) AS customer_driving_country,
 
-            (CASE
+            IFNULL((CASE
                 WHEN f.is_verified > 0 THEN 'YES'
                 ELSE 'NO'
-            END) customer_doc_vertification_status,
+            END), 0) AS customer_doc_vertification_status,
 
-            b.days,
-            (SELECT 
+            IFNULL(b.days, 0) AS days,
+            -- b.days,
+
+            IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
                     myproject.rental_charges cc
                 WHERE
                     cc.booking_id = b.id
-                        AND cc.charge_type_id IN (30 , 31)) AS extra_day_calc,
+                        AND cc.charge_type_id IN (30 , 31)), 0) AS extra_day_calc,
 
             IFNULL(myproject.get_rental_rates(b.id,
                     b.millage_id,
@@ -522,7 +482,7 @@ FROM
             --     ELSE b.WIR
             -- END) AS insurance_rate,
 
-            (CASE
+            IFNULL((CASE
                 WHEN 
                     (SELECT 
                             SUM(total_charge)
@@ -536,9 +496,9 @@ FROM
                                                                         ELSE b.WIR
                                                                     END)
                 ELSE 0
-            END) AS insurance_rate,
+            END), 0) AS insurance_rate,
             
-            (CASE
+            IFNULL((CASE
                 WHEN
                     (CASE
                         WHEN b.days < 7 THEN b.DIR
@@ -548,21 +508,22 @@ FROM
                 THEN
                     'Full Insurance'
                 ELSE ''
-            END) insurance_type,
-            (SELECT 
+            END), 0) AS insurance_type,
+
+            IFNULL((SELECT 
                     ad.rate
                 FROM
                     myproject.cars_available_detail ad
                 WHERE
                     ad.car_available_id = b.car_available_id
                         AND ad.millage_id = b.millage_id
-                        AND ad.month_id = b.contract_id) millage_rate,
-            (SELECT 
+                        AND ad.month_id = b.contract_id), 0) AS millage_rate,
+           IFNULL((SELECT 
                     name
                 FROM
                     myproject.Allowed_Millage am
                 WHERE
-                    am.id = b.millage_id) millage_cap_km,
+                    am.id = b.millage_id), 0) AS millage_cap_km,
 
             IFNULL((SELECT 
                     SUM(total_charge)
@@ -572,34 +533,34 @@ FROM
                     cc.booking_id = b.id
                         AND cc.charge_type_id = 4), 0) AS rent_charge,
 
-            (SELECT 
+            IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
                     myproject.rental_charges cc
                 WHERE
                     cc.booking_id = b.id
-                        AND cc.charge_type_id IN (31 , 30)) AS extra_day_charge,
-            (SELECT 
+                        AND cc.charge_type_id IN (31 , 30)), 0) AS extra_day_charge,
+            IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
                     myproject.rental_charges cc
                 WHERE
                     cc.booking_id = b.id
-                        AND cc.charge_type_id = 11) AS delivery_charge,
-            (SELECT 
+                        AND cc.charge_type_id = 11), 0) AS delivery_charge,
+            IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
                     myproject.rental_charges cc
                 WHERE
                     cc.booking_id = b.id
-                        AND cc.charge_type_id = 3) AS collection_charge,
-            (SELECT 
+                        AND cc.charge_type_id = 3), 0) AS collection_charge,
+            IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
                     myproject.rental_charges cc
                 WHERE
                     cc.booking_id = b.id
-                        AND cc.charge_type_id IN (21 , 40)) AS additional_driver_charge,
+                        AND cc.charge_type_id IN (21 , 40)), 0) AS additional_driver_charge,
 
             IFNULL((SELECT 
                     SUM(total_charge) / days
@@ -609,13 +570,13 @@ FROM
                     cc.booking_id = b.id
                         AND cc.charge_type_id IN (21 , 40)), 0) AS additional_driver_rate,
 
-            (SELECT 
+            IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
                     myproject.rental_charges cc
                 WHERE
                     cc.booking_id = b.id
-                        AND cc.charge_type_id IN (15 , 36)) AS insurance_charge,
+                        AND cc.charge_type_id IN (15 , 36)), 0) AS insurance_charge,
 
             IFNULL((SELECT 
                     SUM(total_charge)
@@ -689,21 +650,21 @@ FROM
                     cc.booking_id = b.id
                         AND cc.charge_type_id IN (51)), 0) AS delivery_update,
 
-            (SELECT 
+            IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
                     myproject.rental_charges cc
                 WHERE
                     cc.booking_id = b.id
-                        AND cc.charge_type_id = 25) AS intercity_charge,
+                        AND cc.charge_type_id = 25), 0) AS intercity_charge,
             0 AS millage_charge,
-            (SELECT 
+            IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
                     myproject.rental_charges cc
                 WHERE
                     cc.booking_id = b.id
-                        AND cc.charge_type_id IN (15, 18, 23, 26, 37, 38, 39, 48, 49, 50, 51, 52, 57)) AS other_rental_charge,
+                        AND cc.charge_type_id IN (15, 18, 23, 26, 37, 38, 39, 48, 49, 50, 51, 52, 57)), 0) AS other_rental_charge,
             -- (SELECT 
             --         SUM(total_charge)
             --     FROM
@@ -711,6 +672,7 @@ FROM
             --     WHERE
             --         cc.booking_id = b.id
             --             AND cc.charge_type_id = 14) AS discount_charge,
+
             -- ROLLUP = RETURN THE TOTAL DISCOUNT
             IFNULL((SELECT
                     SUM(rc.total_charge) AS total_discount
@@ -719,6 +681,7 @@ FROM
                 WHERE
                     rc.booking_id = b.id
                     AND rc.charge_type_id IN (14)), 0) AS discount_charge, -- total discount charge
+                    
             -- ROLLUP = RETURN ONLY THE EXTENSION DISCOUNT
             IFNULL((CASE
                 -- WHEN is_extension THEN calc extension discount
@@ -755,29 +718,29 @@ FROM
                 ELSE 0
             END), 0) AS discount_extension_charge,
 
-            (SELECT 
+            IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
                     myproject.rental_charges cc
                 WHERE
                     cc.booking_id = b.id
-                        AND cc.charge_type_id = 20) AS total_vat,
-            (SELECT 
+                        AND cc.charge_type_id = 20), 0) AS total_vat,
+            IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
                     myproject.rental_charges cc
                 WHERE
                     cc.booking_id = b.id
-                        AND cc.charge_type_id IN (1 , 2, 8, 9, 13, 14, 20, 22, 24, 27, 28, 44, 45, 46, 47)) AS other_charge,
-            (SELECT 
+                        AND cc.charge_type_id IN (1 , 2, 8, 9, 13, 14, 20, 22, 24, 27, 28, 44, 45, 46, 47)), 0) AS other_charge,
+            IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
                     myproject.rental_charges cc
                 WHERE
                     cc.booking_id = b.id
-                        AND cc.charge_type_id IN (3 , 4, 11, 15, 16, 17, 18, 19, 21, 23, 25, 26, 29, 30, 31, 32, 36, 37, 38, 39, 40, 41, 48, 49, 50, 51, 52, 56, 57)) AS booking_charge,
+                        AND cc.charge_type_id IN (3 , 4, 11, 15, 16, 17, 18, 19, 21, 23, 25, 26, 29, 30, 31, 32, 36, 37, 38, 39, 40, 41, 48, 49, 50, 51, 52, 56, 57)), 0) AS booking_charge,
 
-            (SELECT 
+            IFNULL((SELECT 
                     SUM(CASE
                             WHEN charge_type_id IN (14) THEN - (total_charge)
                             ELSE (total_charge)
@@ -786,34 +749,23 @@ FROM
                     myproject.rental_charges cc
                 WHERE
                     cc.booking_id = b.id
-                        AND cc.charge_type_id IN (3 , 4, 11, 15, 16, 17, 18, 19, 21, 23, 25, 26, 29, 30, 31, 32, 36, 37, 38, 39, 40, 41, 48, 49, 50, 51, 52, 56, 57, 14)) AS booking_charge_less_discount,
+                        AND cc.charge_type_id IN (3 , 4, 11, 15, 16, 17, 18, 19, 21, 23, 25, 26, 29, 30, 31, 32, 36, 37, 38, 39, 40, 41, 48, 49, 50, 51, 52, 56, 57, 14)), 0) AS booking_charge_less_discount,
 
-            (SELECT 
+            IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
                     myproject.rental_charges cc
                 WHERE
                     cc.booking_id = b.id
-                        AND cc.charge_type_id IN (3 , 4, 11, 15, 16, 17, 18, 19, 21, 23, 25, 26, 29, 30, 31, 32, 36, 37, 38, 39, 40, 41, 48, 49, 50, 51, 52, 56, 57)) AS base_rental_revenue,
+                        AND cc.charge_type_id IN (3 , 4, 11, 15, 16, 17, 18, 19, 21, 23, 25, 26, 29, 30, 31, 32, 36, 37, 38, 39, 40, 41, 48, 49, 50, 51, 52, 56, 57)), 0) AS base_rental_revenue,
 
-            (SELECT 
+            IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
                     myproject.rental_charges cc
                 WHERE
                     cc.booking_id = b.id
-                        AND cc.charge_type_id IN (1 , 2, 8, 9, 13, 14, 20, 22, 24, 27, 28, 44, 45, 46, 47)) AS non_rental_charge,
-                        
-            -- 0 AS extension_charge, -- original field adjusted below
-            -- (SELECT 
-            --     SUM(extension_amount)
-            --     FROM rental_messagesuser m
-            --     WHERE 
-            --         m.booking_id = b.id
-            --         AND (m.subject LIKE '%exten%' OR m.subject=CONCAT('Late Rental Return for Booking#', m.booking_id))
-            --         AND m.extension_days > 0
-            --         AND m.message LIKE '%Dear Partner%') 
-            --     AS extension_charge,
+                        AND cc.charge_type_id IN (1 , 2, 8, 9, 13, 14, 20, 22, 24, 27, 28, 44, 45, 46, 47)), 0) AS non_rental_charge,
 
             IFNULL((SELECT 
                 SUM(extension_days)
@@ -825,24 +777,14 @@ FROM
                     AND m.message LIKE '%Dear Partner%'), 0)
                 AS extension_days,
 
-            (SELECT 
-                    CASE
-                        WHEN COUNT(1) >= 1 THEN 'YES'
-                        ELSE 'NO'
-                    END
-                FROM
-                    myproject.rental_invoice_details
-                WHERE
-                    type = 'Extension' AND booking_id = b.id) AS is_extended,
-
             pc.Promo_Code,
             '' promo_code_discount_amount,
             DATE_FORMAT(pc.date_created, '%Y-%m-%d %H:%i:%s') promocode_created_date,
             b.Promo_Code promo_code_description,
 
-			b.car_available_id car_avail_id, -- ADDED
-            c.cat_id car_cat_id, -- ADDED
-            cat.cat_name car_cat_name, -- ADDED
+			b.car_available_id car_avail_id,
+            c.cat_id car_cat_id,
+            cat.cat_name car_cat_name,
 
             ca.car_name requested_car,
             c.car_name,
@@ -917,16 +859,16 @@ FROM
         DATE(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) BETWEEN @str_date AND @end_date
 		AND COALESCE(b.vendor_id,'') NOT IN (33, 5 , 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
 		AND (LOWER(au.first_name) NOT LIKE '%test%' AND LOWER(au.last_name) NOT LIKE '%test%' AND LOWER(au.username) NOT LIKE '%test%' AND LOWER(au.email) NOT LIKE '%test%')
-    
+
+	-- FOR TESTING / AUDITING ******* START *********
     -- HAVING booking_charge_less_discount < 0
-    HAVING additional_driver_charge > 0
+    -- HAVING additional_driver_charge > 0
     -- HAVING extension_days > 0
 
-		-- -- AND COALESCE(b.vendor_id,'') IN (33, 5 , 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
-        -- -- AND b.id = '240842'
-	    -- AND b.id IN ("240667", "246876", "240842", "246867") -- need to remove DATE in where above to return all ids
+    -- -- AND COALESCE(b.vendor_id,'') IN (33, 5 , 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
+    -- -- AND b.id = '240842'
+    -- AND b.id IN ("240667", "246876", "240842", "246867") -- need to remove DATE in where above to return all ids
         
-	-- FOR TESTING / AUDITING ******* START *********
 	-- WHERE date(date_add(b.created_on,interval 4 hour)) between '2024-01-01' and '2024-01-01' 
 	-- AND pc.Promo_Code IS NOT NULL
 	-- AND b.id = "218138"

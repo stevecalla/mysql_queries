@@ -9,6 +9,7 @@ CREATE TABLE pacing_base AS
 SELECT 
     booking_id,
     booking_date,
+    max_booking_datetime, -- ADDED
     DATE_FORMAT(pickup_date, '%Y-%m-01') AS pickup_first_day_of_month,
     TIMESTAMPDIFF(DAY, DATE_FORMAT(pickup_date, '%Y-%m-01'), booking_date) AS days_from_first_day_of_month,
 

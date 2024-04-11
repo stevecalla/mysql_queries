@@ -9,6 +9,7 @@ DROP TABLE IF EXISTS pacing_base_groupby;
 -- CREATE PACING BASE STATS ROLLUP WITH GROUPING AND SUM
 CREATE TABLE pacing_base_groupby AS
 SELECT 
+    pb.max_booking_datetime, -- ADDED
     pb.pickup_month_year,
     pb.booking_date,
     pb.days_from_first_day_of_month,
@@ -48,10 +49,11 @@ SELECT
 
 FROM ezhire_pacing_metrics.pacing_base pb
 GROUP BY 
+    pb.max_booking_datetime, -- ADDED
     pb.pickup_month_year,
     pb.booking_date,  
     pb.days_from_first_day_of_month
-ORDER BY pb.pickup_month_year ASC;
+ORDER BY pb.pickup_month_year ASC, days_from_first_day_of_month ASC;
 
 -- Select all records
 SELECT * FROM pacing_base_groupby;
