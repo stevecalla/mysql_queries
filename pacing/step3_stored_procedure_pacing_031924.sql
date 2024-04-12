@@ -1,22 +1,29 @@
 -- https://www.sqlshack.com/learn-mysql-the-basics-of-mysql-stored-procedures/
 -- https://www.mysqltutorial.org/mysql-stored-procedure/getting-started-with-mysql-stored-procedures/
 
+USE ezhire_pacing_metrics;
+
 -- Drop the procedure
 DROP PROCEDURE `ezhire_pacing_metrics`.`process_pickup_month_data_join`;
 
 DELIMITER //
 
+
 CREATE DEFINER=`root`@`localhost` PROCEDURE `process_pickup_month_data_join`()
 BEGIN
+
     DECLARE pickup_month_year_val VARCHAR(10);
     DECLARE loop_count INT DEFAULT 0;  -- Variable to count loops
     DECLARE done INT DEFAULT 0;
 
+    -- ******* STEP #1: START - GET DISTINCT MONTH YEAR COMBINATIONS TO USE IN LOOP BELOW ************
     DECLARE cur_pickup_month CURSOR FOR
         -- SELECT DISTINCT pickup_month_year FROM pacing_base_groupby WHERE pickup_month_year LIKE '2023-01%' ORDER BY pickup_month_year;
+        -- SELECT DISTINCT pickup_month_year FROM pacing_base_groupby WHERE pickup_month_year LIKE '2023-%' ORDER BY pickup_month_year;
         SELECT DISTINCT pickup_month_year FROM pacing_base_groupby ORDER BY pickup_month_year;
 
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+    -- ******* STEP #1: END **************************************************************
 
     -- Progress and debug log
     CREATE TABLE IF NOT EXISTS debug_log (
@@ -27,6 +34,7 @@ BEGIN
 
     INSERT INTO debug_log (log_message) VALUES ('Starting execution of procedure');
 
+    -- ******* STEP #2: START - CREATE TABLE TO CONTAIN PACING RESULTS WITH ALL DATES ************
     -- Drop the pacing_base_all_calendar_dates table if it exists
     DROP TABLE IF EXISTS pacing_base_all_calendar_dates;
 
@@ -56,7 +64,9 @@ BEGIN
         running_total_booking_charge_less_discount_extension_aed DECIMAL(20, 2),
         running_total_extension_charge_aed DECIMAL(20, 2)
     );
-    
+    -- ******* STEP #2: END **************************************************************
+
+    -- ******* STEP #3: START - LOOP THRU EACH YEAR MONTH COMBINATION; CREATE TEMP TABLE WITH MISSING CALENDAR DATES THEN INSERT TEMP TABLE INFO INTO CONSOLIDATED TABLE WITH ALL MONTH YEAR COMBINATIONS CALLED pacing_base_all_calendar_dates TABLE  ************
     OPEN cur_pickup_month;
     read_loop: LOOP
         FETCH cur_pickup_month INTO pickup_month_year_val;
@@ -72,6 +82,15 @@ BEGIN
         --     SELECT
         --         loop_count AS grouping_id,
         --         pbg.pickup_month_year,
+        --          pbg.max_booking_datetime, -- ADDED
+
+        --          -- CALC IS_BEFORE_TODAY
+        --          CASE
+        --              WHEN days_from_first_day_of_month IS NULL THEN NULL
+        --              WHEN days_from_first_day_of_month <= DATE_FORMAT(max_booking_datetime, '%d') + 2 THEN "yes"
+        --              ELSE "no"
+        --          END AS is_before_today, -- ADDED
+
         --         CONCAT(pickup_month_year, '-01') AS first_day_of_month,
         --         LAST_DAY(CONCAT(pickup_month_year, '-01')) AS last_day_of_month,
                 
@@ -156,8 +175,7 @@ BEGIN
         INSERT INTO pacing_base_all_calendar_dates
             SELECT * FROM temp;
 
-        -- *************
-
+        -- OUTPUT RESULTS
 	    -- SELECT * FROM ezhire_pacing_metrics.pacing_base_all_calendar_dates WHERE pickup_month_year = pickup_month_year_val;
 	    SELECT * FROM ezhire_pacing_metrics.pacing_base_all_calendar_dates WHERE grouping_id = loop_count;
     
@@ -172,7 +190,9 @@ BEGIN
     CLOSE cur_pickup_month;
 
 	SELECT * FROM ezhire_pacing_metrics.pacing_base_all_calendar_dates;
+    -- ******* STEP #3: END **************************************************************
 
+    -- ******* STEP #4: START - REPLACE NULL VALUES WITH MOST RECENT PRIOR POPULATED ROW ************
     -- **************************************** --
     DROP TABLE IF EXISTS pacing_final_data;
 
@@ -302,6 +322,10 @@ BEGIN
             
     FROM pacing_base_all_calendar_dates;
     
+    -- Add the created_at column after the loop
+    ALTER TABLE pacing_final_data ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+    -- ******* STEP #4: END **************************************************************
+
     SELECT * FROM pacing_final_data;
 
     -- Progress log
