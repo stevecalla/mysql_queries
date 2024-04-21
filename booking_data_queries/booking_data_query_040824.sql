@@ -189,6 +189,7 @@ SELECT
     IFNULL(millage_cap_km, 0) AS millage_cap_km,
 
     IFNULL(rent_charge, 0) AS rent_charge,
+    -- RENT CHARGE FOR INITIAL BOOKING (TO EXCLUDE EXTENSION AND DISCOUNT)
     IFNULL((((days - extension_days) * customer_rate) - (discount_charge)) * tb.conversion_rate, 0) AS rent_charge_less_discount_extension_aed,
 
     IFNULL(extra_day_charge, 0) AS extra_day_charge,
@@ -237,6 +238,7 @@ SELECT
     
     (((customer_rate + insurance_rate + additional_driver_rate + pai_rate + baby_seat_rate) * extension_days) - discount_extension_charge) * tb.conversion_rate AS extension_charge_aed,
 
+    -- REVISED is_extension DEFINITION
     CASE
         WHEN extension_days >= 1 THEN "YES"
         ELSE "NO"
@@ -683,6 +685,9 @@ FROM
                     AND rc.charge_type_id IN (14)), 0) AS discount_charge, -- total discount charge
                     
             -- ROLLUP = RETURN ONLY THE EXTENSION DISCOUNT
+            -- EXTENTION DISCOUNT ONLY (NOT PERFECT)
+            -- BASICALLY LOOKS FOR A DISCOUNT CHARGE ID 14 THAT APPLIED AFTER THE BOOKING CREATED DATE
+            -- ATTEMPTED TO USE THE COMMENTS WITH %EXTENSION% BUT WAS LESS ACCURATE DUE TO INCONSISTENT USE OF COMMENTS
             IFNULL((CASE
                 -- WHEN is_extension THEN calc extension discount
                 WHEN (SELECT 

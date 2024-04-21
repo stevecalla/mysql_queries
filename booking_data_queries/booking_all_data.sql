@@ -1,1 +1,0 @@
-SELECT * FROM ezhire_booking_data.booking_data;

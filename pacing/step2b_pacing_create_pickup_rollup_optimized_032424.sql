@@ -1,4 +1,4 @@
--- THIS VERSION WORKS BUT IT TAKES ABOUT 6 MINUTES TO EXECUTE
+-- MUCH FASTER VERSION OF STEP 2
 
 -- Select database
 USE ezhire_pacing_metrics;
