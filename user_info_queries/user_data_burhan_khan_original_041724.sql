@@ -2,7 +2,7 @@ SELECT DISTINCT
     f.user_ptr_id AS user_id,
     CONCAT(u.first_name, ' ', u.last_name) AS name,
     cnt.Country AS resident_country,
-    ct.name AS renting_in_city,
+    ct.name AS renting_in_city,	
     DATE_FORMAT(f.date_join, '%d/%m/%Y') AS date_join,
     CASE
         WHEN DATE_FORMAT(r.last_return, '%d/%m/%Y') IS NULL THEN 'no bookings'

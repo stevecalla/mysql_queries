@@ -1,4 +1,4 @@
-set  @str_date = '2024-01-01',@end_date = '2024-01-01';
+set  @str_date = '2024-01-01',@end_date = '2024-01-31';
 select 
  booking_id,agreement_number
 ,booking_datetime
@@ -120,8 +120,9 @@ END) AS marketplace_or_dispatch
 ,(SELECT name FROM myproject.rental_vendors rv WHERE rv.owner_id = b.vendor_id AND b.vendor_id <> 234555) AS marketplace_partner
 ,(SELECT name FROM myproject.rental_vendors rv WHERE rv.owner_id = b.vendor_id) AS marketplace_partner_summary
 ,b.platform_generated AS booking_channel
-,(select name FROM myproject.rental_car_booking_source bs WHERE bs.id = b.car_booking_source_id) as booking_source
-,''total_lifetime_booking_revenue -- CHANGE
+#,(select name FROM myproject.rental_car_booking_source bs WHERE bs.id = b.car_booking_source_id) as booking_source
+, bs.name  booking_source
+,''total_lifetime_booking_revenue
 ,(CASE WHEN (SELECT COUNT(1) FROM myproject.rental_car_booking2 bb WHERE bb.owner_id = b.owner_id)> 1 THEN 'YES' ELSE 'NO' END) repeated_user
 ,(SELECT COUNT(1) FROM myproject.rental_car_booking2 bb WHERE bb.owner_id = b.owner_id) AS no_of_bookings
 ,(SELECT COUNT(1) FROM myproject.rental_car_booking2 bb WHERE bb.owner_id = b.owner_id AND bb.status = 8) AS no_of_cancel_bookings
@@ -174,9 +175,12 @@ END) AS marketplace_or_dispatch
 ,(case when b.self_return_status = 1 then 'Self' else 'Collection' end)  collection_method
 ,b.return_location_lat collection_lat
 ,b.return_location_lng collection_lng
-,(SELECT rate FROM myproject.rental_rentalfeedback rf WHERE rf.booking_id = b.id order by rf.id desc limit 1)  nps_score
-,(SELECT ct.conversion_rate FROM myproject.country_conversion_rate ct, myproject.rental_city c WHERE ct.country_id = c.CountryID AND c.id = b.city_id) AS conversion_rate
-,(SELECT comments FROM myproject.rental_rentalfeedback rf WHERE rf.booking_id = b.id order by rf.id desc limit 1) nps_comment
+#,(SELECT rate FROM myproject.rental_rentalfeedback rf WHERE rf.booking_id = b.id order by rf.id desc limit 1)  nps_score
+#,(SELECT ct.conversion_rate FROM myproject.country_conversion_rate ct, myproject.rental_city c WHERE ct.country_id = c.CountryID AND c.id = b.city_id) AS conversion_rate
+#,(SELECT comments FROM myproject.rental_rentalfeedback rf WHERE rf.booking_id = b.id order by rf.id desc limit 1) nps_comment
+,ff.rate nps_score
+,ct.conversion_rate AS conversion_rate
+,ff.comments nps_comment
 FROM myproject.rental_car_booking2 b
 INNER JOIN myproject.rental_fuser f ON f.user_ptr_id = b.owner_id
 INNER JOIN myproject.rental_city rc on rc.id = b.city_id
@@ -185,8 +189,10 @@ LEFT JOIN myproject.rental_vendors rv on rv.owner_id = b.vendor_id
 LEFT JOIN myproject.rental_car c ON c.id = b.car_id
 LEFT JOIN myproject.rental_cars_available ca on ca.id = b.car_available_id
 LEFT JOIN myproject.rental_add_promo_codes pc ON pc.id = b.Promo_Code_id
-
-
+left join (SELECT max(id),rate,comments,booking_id FROM myproject.rental_rentalfeedback rf group by booking_id ) ff on ff.booking_id = b.id   
+left join  rental_city ci on ci.id = b.city_id 
+left join country_conversion_rate ct on ci.CountryID = ct.country_id
+left join rental_car_booking_source bs on bs.id = b.car_booking_source_id
 
 where date(date_add(b.created_on,interval 4 hour))between @str_date and @end_date
 ORDER BY b.id 
