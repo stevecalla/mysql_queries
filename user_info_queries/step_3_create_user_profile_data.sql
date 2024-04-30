@@ -50,12 +50,12 @@ SELECT
 	udkm.booking_count_future,
 	udkm.booking_count_other,
 
-    -- -- REVENUE STATS
+    -- REVENUE STATS
 	udkm.booking_charge_total_less_discount_aed,
 	udkm.booking_charge_total_less_discount_extension_aed,
 	udkm.booking_charge_extension_only_aed,
 
-	-- -- DAYS STATS
+	-- DAYS STATS
 	udkm.booking_days_total,
 	udkm.booking_days_initial_only,
 	udkm.booking_days_extension_only,
@@ -68,21 +68,33 @@ SELECT
 	udkm.booking_most_recent_return_date,
     
     -- DATE COMPARISONS
-	udkm.booking_join_vs_first_created, 
+	udkm.booking_join_vs_first_created,
+	udkm.booking_first_created_vs_first_pickup,
 	udkm.booking_most_recent_created_on_vs_now,
 	udkm.booking_most_recent_return_vs_now,
 
 	-- UTC NOW CONVERTED TO GST
-	udkm.date_now_gst
+	udkm.date_now_gst,
+
+	-- STATS CALCULATIONS
+	CASE
+		WHEN (udkm.booking_count_completed + udkm.booking_count_started) = 0 THEN 0
+		WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0
+		ELSE (udkm.booking_charge_total_less_discount_aed) / (udkm.booking_count_completed + udkm.booking_count_started)
+	END AS booking_charge__less_discount_aed_per_completed_started_bookings,
+	CASE
+		WHEN (udkm.booking_count_completed + udkm.booking_count_started) = 0 THEN 0
+		WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0
+		ELSE (udkm.booking_days_total) / (udkm.booking_count_completed + udkm.booking_count_started)
+	END total_days_per_completed_and_started_bookings
 
 FROM ezhire_user_data.user_data_combined_booking_data AS ubd
 	LEFT JOIN user_data_key_metrics_rollup AS udkm ON udkm.user_ptr_id = ubd.user_ptr_id
-	-- LEFT JOIN user_data_combined_booking_data AS ubdv2 ON ubdv2.user_ptr_id = ubd.user_ptr_id
 -- WHERE 
 --     ubd.date_join_formatted_gst = '2024-01-01'
 	-- AND
 	-- ubd.user_ptr_id IN ('549331')
-GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39
+GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40
 ORDER BY ubd.user_ptr_id;
 
 -- QUERY ENTIRE user_and_booking_data DB

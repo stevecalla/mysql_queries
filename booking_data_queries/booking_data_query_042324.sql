@@ -1,11 +1,12 @@
 USE myproject;
 
-SET @str_date = '2024-04-01', @end_date = '2024-12-31';
+SET @str_date = '2024-01-01', @end_date = '2024-01-01';
 
 -- ********* START ************ CHANGE LOG
 -- 042324 Query was running many times slower for some reason starting ~4/15/24
--- Team replaced several inline queries with joins
--- Added LIMIT 1 to subqueries given error returning more than 1 row; error only seemed to occured on 4/23/24
+-- 042324 Team replaced several inline queries with joins
+-- 4/23/24 Added LIMIT 1 to subqueries given error returning more than 1 row
+-- 4/29/24 adjust delivery lat & lng to remove comma
 -- ********* END *************** CHANGE LOG
 
 SELECT 
@@ -268,9 +269,18 @@ SELECT
         '"',
         '') AS delivery_location,
     deliver_method,
-    
-    IFNULL(delivery_lat, collection_lat) AS delivery_lat,
-    IFNULL(delivery_lng, collection_lng) AS delivery_lng,
+
+    -- ADJUSTED CODE FOR UPLOAD TO BIGQUERY; CODE USED FOR COLLECTION BELOW DIDN'T WORK FOR DELIERY
+    CASE
+        WHEN delivery_lat IS NULL THEN ''
+        WHEN delivery_lat = '' THEN ''
+        ELSE REPLACE(delivery_lat, ',', '')
+    END AS delivery_lat,
+    CASE
+        WHEN delivery_lng IS NULL THEN ''
+        WHEN delivery_lng = '' THEN ''
+        ELSE REPLACE(delivery_lng, ',', '')
+    END AS delivery_lng,
 
     REPLACE(REPLACE(REPLACE(collection_location,
                 '
@@ -895,6 +905,7 @@ FROM
     -- AND b.id IN ('244042','257685','240885', '241700', '241916')
     -- WHERE b.id IN ("240667", "246876", "240842", "246867", "248667")
     -- WHERE b.id IN ("260575", "199506", "200086", "237968") -- evaluate rental charge issues
+    -- WHERE b.id IN ("269956", '252036') -- remove extra comma in delivery lat
 	-- FOR TESTING / AUDITING ******* END *********
 	
 	-- FOR USE IN NODE / JAVASCRIPT AS SQL SET VARIABLES DON'T WORK ******* START *********

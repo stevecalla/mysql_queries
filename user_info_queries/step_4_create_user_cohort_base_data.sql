@@ -9,10 +9,12 @@ DROP TABLE IF EXISTS user_data_cohort_base;
 CREATE TABLE IF NOT EXISTS user_data_cohort_base (
     id INT PRIMARY KEY AUTO_INCREMENT,
 
+    -- USER DATA FIELDS
     user_ptr_id INT,
     date_join_formatted_gst DATE,
     date_join_cohort VARCHAR(10),
 
+    -- BOOKING DATA FIELDS
     booking_id INT,
     status VARCHAR(64),
     booking_type VARCHAR(64),

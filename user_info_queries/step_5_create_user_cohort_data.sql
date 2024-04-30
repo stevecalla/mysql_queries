@@ -24,19 +24,23 @@ CREATE TABLE user_data_cohort_stats
 SELECT
     NOW() AS created_at,
     ct.calendar_date,
-    ct.year AS year,
-    ct.quarter AS quarter,
-    ct.month AS month,
-    ct.week_of_year AS week,
-    ct.day_of_year AS day,
+    DATE_FORMAT(ct.calendar_date, '%Y-%m') AS calendar_year_month,
+    YEAR(ct.calendar_date) AS calendar_year,
+    QUARTER(ct.calendar_date) AS calendar_quarter,
+    MONTH(ct.calendar_date) AS calendar_month,
+    WEEK(ct.calendar_date) AS calendar_week,
+    DAY(ct.calendar_date) AS calendar_day,
     cb.max_booking_datetime, -- used to determine last recorded added
-    cb.date_join_cohort,    
 
-    -- use year/month then change day to 1st
+    -- COHORT DATA
+    cb.date_join_cohort AS cohort_join_year_month,
+    YEAR(date_join_formatted_gst) AS cohort_join_year,
+    QUARTER(date_join_formatted_gst) AS cohort_join_quarter,
+    MONTH(date_join_formatted_gst) AS cohort_join_month,
+
+    -- COHORT - DIFF IN MONTHS B/ JOIN DATE & CALENDAR DATE
     DATE_FORMAT(STR_TO_DATE(CONCAT(cb.date_join_cohort, '-01'), '%Y-%m-%d'), '%Y-%m-01') AS cohort_month_start,
-    
     CONCAT(DATE_FORMAT(ct.calendar_date, '%Y-%m'), '-01') AS calendar_month_start,
-
     TIMESTAMPDIFF(MONTH, 
         DATE_FORMAT(STR_TO_DATE(CONCAT(cb.date_join_cohort, '-01'), '%Y-%m-%d'), '%Y-%m-01'),
         CONCAT(DATE_FORMAT(ct.calendar_date, '%Y-%m'), '-01')
@@ -338,9 +342,10 @@ INNER JOIN
 -- WHERE cb.return_date >= @return_date AND cb.status NOT LIKE @status
 -- TESTING EXAMPLES ************
 
-GROUP BY cb.created_at, ct.calendar_date, cb.max_booking_datetime, cb.date_join_cohort
+GROUP BY cb.created_at, ct.calendar_date, DATE_FORMAT(ct.calendar_date, '%Y-%m'), cb.max_booking_datetime, cb.date_join_cohort,  YEAR(date_join_formatted_gst), QUARTER(date_join_formatted_gst), MONTH(date_join_formatted_gst)
 
-ORDER BY ct.calendar_date ASC, cb.date_join_cohort ASC;
+ORDER BY ct.calendar_date ASC, cb.date_join_cohort ASC
+LIMIT 10;
 
 -- View key_metrics summary table
 SELECT 
