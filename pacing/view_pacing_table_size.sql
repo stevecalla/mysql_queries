@@ -7,7 +7,7 @@ SELECT * FROM calendar_table;  			-- 3,999		"step0_key_stats_create_db_and_calen
 SHOW INDEXES FROM key_metrics_base;
 SELECT * FROM key_metrics_base;  		-- 251,640	 	"step1_key_stats_key_metrics_base_031424" 			used in all the key_metrics queries below
 
-SELECT * FROM key_metrics; 				-- 535	 		"step2b_key_onrent_calc_multiple_031424.sql" 		executes logic in small blocks then joins data together
+-- SELECT * FROM key_metrics; 				-- 535	 		"step2b_key_onrent_calc_multiple_031424.sql" 		executes logic in small blocks then joins data together
 SELECT * FROM key_metrics_core_onrent_days; 	-- 535  "step2a_script key_stats_onrent_calc_031424.sql"	all code in one file
 SELECT * FROM key_metrics_data; 		-- 535; 		"sql_getKeyMetrics_loop.js"	node script				used key_metrics_base in generateOnRentSQL_031624.js
 -- view key metrics stats

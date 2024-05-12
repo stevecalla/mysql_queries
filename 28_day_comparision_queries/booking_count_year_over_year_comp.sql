@@ -72,7 +72,7 @@ SELECT
     
 FROM ezhire_booking_data.booking_data 
 WHERE booking_year IN (YEAR(Current_Date()), YEAR(subdate(Current_Date(), (52 * 7))))
-	-- AND status <> 'Cancelled by User'
+	AND status <> 'Cancelled by User'
 GROUP BY DATE(booking_datetime), booking_day_of_week_v2, date_period, common_date
 HAVING date_period <> 'no'
 ORDER BY booking_date DESC
@@ -80,6 +80,7 @@ ORDER BY booking_date DESC
 
 SELECT 
     booking_date,
+	DATE_FORMAT(booking_date, '%a, %c/%e/%y') AS formatted_date,
     SUM(CASE WHEN date_period = 'Current 28 Days' THEN booking_count ELSE 0 END) AS `Current 28 Days`,
     SUM(CASE WHEN date_period = '4 Weeks Prior' THEN booking_count ELSE 0 END) AS `4 Weeks Prior`,
     SUM(CASE WHEN date_period = '52 Weeks Prior' THEN booking_count ELSE 0 END) AS `52 Weeks Prior`
@@ -88,7 +89,7 @@ WHERE date_period <> 'no'
 GROUP BY booking_date
 ORDER BY booking_date DESC;
 
--- -- #3) *****************************************
+-- #3) *****************************************
 WITH DateCounts AS (
     SELECT 
         DATE(booking_datetime) AS booking_date,
@@ -110,18 +111,19 @@ WITH DateCounts AS (
         
     FROM ezhire_booking_data.booking_data 
     WHERE booking_year IN (YEAR(Current_Date()), YEAR(subdate(Current_Date(), (52 * 7))))
-        -- AND status <> 'Cancelled by User'
+        AND status <> 'Cancelled by User'
     GROUP BY booking_date, booking_day_of_week_v2, date_period, common_date, booking_datetime
     -- HAVING date_period <> 'no'
     ORDER BY booking_date DESC
 )
 
 SELECT 
-    common_date,
-    -- DATE_FORMAT(common_date, '%a, %c/%e') AS formatted_date,
-    SUM(CASE WHEN date_period = 'Current 28 Days' THEN booking_count ELSE 0 END) AS `Current 28 Days`,
+    -- common_date,
+    DATE_FORMAT(common_date, '%a, %c/%e') AS formatted_date,
+    SUM(CASE WHEN date_period = '52 Weeks Prior' THEN booking_count ELSE 0 END) AS `52 Weeks Prior`,
     SUM(CASE WHEN date_period = '4 Weeks Prior' THEN booking_count ELSE 0 END) AS `4 Weeks Prior`,
-    SUM(CASE WHEN date_period = '52 Weeks Prior' THEN booking_count ELSE 0 END) AS `52 Weeks Prior`
+    SUM(CASE WHEN date_period = 'Current 28 Days' THEN booking_count ELSE 0 END) AS `Current 28 Days`,
+    CONCAT(FORMAT((SUM(CASE WHEN date_period = 'Current 28 Days' THEN booking_count ELSE 0 END) - SUM(CASE WHEN date_period = '52 Weeks Prior' THEN booking_count ELSE 0 END)) / SUM(CASE WHEN date_period = '52 Weeks Prior' THEN booking_count ELSE 0 END) * 100, 0), '%') AS `Difference %`
 FROM DateCounts
 WHERE date_period <> 'no'
 GROUP BY common_date
