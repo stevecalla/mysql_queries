@@ -4,10 +4,13 @@ SELECT * FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'myproject' AND TAB
 SELECT * FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'myproject' AND TABLE_NAME = 'auth_user'; -- UPDATE_TIME
 
 -- SELECT * FROM myproject.rental_car_booking2 LIMIT 1;
+SELECT * FROM myproject.rental_fuser WHERE user_ptr_id >= 574800 AND user_ptr_id <= 574997;
+SELECT * FROM myproject.auth_user WHERE email LIKE '%calla%';
+
 SELECT * FROM myproject.rental_fuser WHERE user_ptr_id = 574997;
 SELECT * FROM myproject.auth_user WHERE email = 'callasteven@gmail.com';
 
--- SHOW COLUMNS FROM myproject.rental_fuser;
+SHOW COLUMNS FROM myproject.rental_fuser;
 SHOW COLUMNS FROM myproject.auth_user;
 
 -- FINDS THE MOST RECENT CREATED RECORD; INDICATES WHEN THE DB WAS LAST UPDATED
@@ -69,7 +72,7 @@ SELECT
     source_field,
     UTC_TIMESTAMP() as timestamp_utc,
     DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR) AS timestamp_gst,
-    -- DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR) AS timestamp_gst,
+    DATE_ADD(UTC_TIMESTAMP(), INTERVAL -6 HOUR) AS timestamp_mst,
     
     last_updated, -- converts base time via MST + 7 to UTC (converts 10:07:53 to 16:07:53)
     DATE_FORMAT(CONVERT_TZ(last_updated, '+00:00', '+00:00'), '%Y-%m-%d %H:%i:%s UTC') AS last_updated_utc, -- NECESSARY RUNNING QUERY FROM THE SOURCE DB INTO NODE; IN MYSQL WORKBENCH THERE IS NOT DIFFERENCE BETWEEN LAST_UDPATED AND LAST_UPDATED_UTC

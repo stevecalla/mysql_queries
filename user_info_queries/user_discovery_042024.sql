@@ -7,14 +7,14 @@ USE myproject;
 -- RENTAL USER TABLE
 SELECT 
 	*
-FROM rental_fuser
-LIMIT 10;
+FROM rental_fuser;
+-- LIMIT 10;
 
 -- AUTH USER TABLE
 SELECT 
 	*
-FROM auth_user
-LIMIT 10;
+FROM auth_user;
+-- LIMIT 10;
 
 -- GET ALL RECORDS WITH TEST USERS REMOVED
 -- SELECT
