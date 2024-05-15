@@ -1,12 +1,13 @@
 USE myproject;
 
-SET @str_date = '2024-01-01', @end_date = '2024-01-01';
+SET @str_date = '2023-01-01', @end_date = '2023-01-01';
 
 -- ********* START ************ CHANGE LOG
 -- 042324 Query was running many times slower for some reason starting ~4/15/24
 -- 042324 Team replaced several inline queries with joins
 -- 4/23/24 Added LIMIT 1 to subqueries given error returning more than 1 row
 -- 4/29/24 adjust delivery lat & lng to remove comma
+-- 5/13/24 add discount_charge_aed
 -- ********* END *************** CHANGE LOG
 
 SELECT 
@@ -206,6 +207,7 @@ SELECT
     IFNULL(other_rental_charge, 0) AS other_rental_charge,
 
     IFNULL(discount_charge, 0) AS discount_charge,
+    IFNULL(discount_charge * tb.conversion_rate, 0) AS discount_charge_aed,
     IFNULL(discount_extension_charge, 0) AS discount_extension_charge,
 
     IFNULL(total_vat, 0) AS total_vat,

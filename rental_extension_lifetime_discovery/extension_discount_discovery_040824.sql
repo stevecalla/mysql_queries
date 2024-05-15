@@ -1,4 +1,5 @@
-SET @extension_id = '250964';
+-- SET @extension_id = '250964';
+SET @extension_id = '267093'; -- only should have been charged 2 days; rental ended late due to vendor issue
 -- Using multiple SET statements
 SET @extension_id1 = '257685'; -- legit $40 extension discont
 SET @extension_id2 = '244042'; -- legit $115 extension discount & $100 initial discount
@@ -8,6 +9,7 @@ SET @extension_id4 = '241916'; -- not an extension
 SET @extension_id5 = '245544'; -- negative less extension charge; adjusted date formula to Y-M-D
 SET @extension_id6 = '247185'; -- discount applied within 24 hours; don't consider extension discount
 SET @extension_id7 = '247214'; -- legit extension discount; comment doesn't include extension
+SET @extension_id8 = '267093'; -- only should have been charged 2 days; rental ended late due to vendor issue
 
 -- #1) GET RENTAL CHARGES HISTORY
 SELECT
@@ -24,7 +26,7 @@ ORDER BY
 LIMIT
     200;
 
--- #2) ROLLUP = SELECT ONLY IDS WITH CHARGE TYPE 14 and COMMENT CONTAINS EXTENSION
+-- #2) ROLLUP = SELECT ONLY IDS WITH CHARGE TYPE 14
 SELECT
     rc.booking_id,
     min_date.min_created_date,
@@ -57,7 +59,7 @@ FROM
     ) AS min_date ON rc.booking_id = min_date.booking_id
 WHERE
     -- created_on >= '2024-01-01'
-    rc.booking_id IN (@extension_id1, @extension_id2, @extension_id3, @extension_id4, @extension_id5, @extension_id6, @extension_id7)
+    rc.booking_id IN (@extension_id1, @extension_id2, @extension_id3, @extension_id4, @extension_id5, @extension_id6, @extension_id7, @extension_id8)
     AND rc.charge_type_id IN (14)
     -- if created on date for discount > min_date plus 1 day
     AND DATE_FORMAT(rc.created_on, '%Y-%m-%d') > DATE_FORMAT(DATE_ADD(min_date.min_created_date, INTERVAL 1 DAY), '%Y-%m-%d')
