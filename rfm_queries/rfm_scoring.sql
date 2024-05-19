@@ -21,8 +21,8 @@ DROP TABLE IF EXISTS rfm_score_recency_data;
 CREATE TABLE rfm_score_recency_data
 SELECT 
 	customer_id, 
-    days_since_last_order,
     date_of_order,
+    days_since_last_order,
     FORMAT(percent_rank() OVER (ORDER BY days_since_last_order), 2) AS recency_rank,
     ROW_NUMBER() OVER (ORDER BY days_since_last_order, date_of_order) AS row_number_id,
     COUNT(*) OVER () AS total_rows,
@@ -33,10 +33,10 @@ SELECT
         ELSE 3
 	END AS recency_score_three_parts,
     CASE
-		WHEN ROW_NUMBER() OVER (ORDER BY total_order_value, date_of_order) / COUNT(*) OVER () > 0.80 THEN 1
-		WHEN ROW_NUMBER() OVER (ORDER BY total_order_value, date_of_order) / COUNT(*) OVER () > 0.60 THEN 2
-		WHEN ROW_NUMBER() OVER (ORDER BY total_order_value, date_of_order) / COUNT(*) OVER () > 0.40 THEN 3
-		WHEN ROW_NUMBER() OVER (ORDER BY total_order_value, date_of_order) / COUNT(*) OVER () > 0.20 THEN 4
+		WHEN ROW_NUMBER() OVER (ORDER BY days_since_last_order, date_of_order) / COUNT(*) OVER () > 0.80 THEN 1
+		WHEN ROW_NUMBER() OVER (ORDER BY days_since_last_order, date_of_order) / COUNT(*) OVER () > 0.60 THEN 2
+		WHEN ROW_NUMBER() OVER (ORDER BY days_since_last_order, date_of_order) / COUNT(*) OVER () > 0.40 THEN 3
+		WHEN ROW_NUMBER() OVER (ORDER BY days_since_last_order, date_of_order) / COUNT(*) OVER () > 0.20 THEN 4
         ELSE 5
 	END AS recency_score_five_parts, -- scoring dividing the data into three equal parts
     CASE
@@ -52,8 +52,8 @@ DROP TABLE IF EXISTS rfm_score_frequency_data;
 CREATE TABLE rfm_score_frequency_data
 SELECT 
 	customer_id, 
-    total_number_of_orders, 
     date_of_order,
+    total_number_of_orders, 
     FORMAT(percent_rank() OVER (ORDER BY total_number_of_orders), 2) AS frequency_rank,
     ROW_NUMBER() OVER (ORDER BY total_number_of_orders, date_of_order) AS row_number_id,
     COUNT(*) OVER () AS total_rows,
@@ -64,10 +64,10 @@ SELECT
         ELSE 3
 	END AS frequency_score_three_parts, -- scoring dividing the data into three equal parts
     CASE
-		WHEN ROW_NUMBER() OVER (ORDER BY total_order_value, date_of_order) / COUNT(*) OVER () < 0.20 THEN 1
-		WHEN ROW_NUMBER() OVER (ORDER BY total_order_value, date_of_order) / COUNT(*) OVER () < 0.40 THEN 2
-		WHEN ROW_NUMBER() OVER (ORDER BY total_order_value, date_of_order) / COUNT(*) OVER () < 0.60 THEN 3
-		WHEN ROW_NUMBER() OVER (ORDER BY total_order_value, date_of_order) / COUNT(*) OVER () < 0.80 THEN 4
+		WHEN ROW_NUMBER() OVER (ORDER BY total_number_of_orders, date_of_order) / COUNT(*) OVER () < 0.20 THEN 1
+		WHEN ROW_NUMBER() OVER (ORDER BY total_number_of_orders, date_of_order) / COUNT(*) OVER () < 0.40 THEN 2
+		WHEN ROW_NUMBER() OVER (ORDER BY total_number_of_orders, date_of_order) / COUNT(*) OVER () < 0.60 THEN 3
+		WHEN ROW_NUMBER() OVER (ORDER BY total_number_of_orders, date_of_order) / COUNT(*) OVER () < 0.80 THEN 4
         ELSE 5
 	END AS frequency_score_five_parts, -- scoring dividing the data into three equal parts
     CASE
@@ -83,8 +83,8 @@ DROP TABLE IF EXISTS rfm_score_monetary_data;
 CREATE TABLE rfm_score_monetary_data
 SELECT 
 	customer_id, 
-    total_order_value, 
     date_of_order,
+    total_order_value, 
     FORMAT(percent_rank() OVER (ORDER BY total_order_value), 2) AS monetary_rank, -- base rank i.e. 0, 10%, 20%... for each row
     ROW_NUMBER() OVER (ORDER BY total_order_value, date_of_order) AS row_number_id, -- row number
     COUNT(*) OVER () AS total_rows, -- total number of rows
@@ -119,7 +119,7 @@ CREATE TABLE rfm_score_summary_data
 SELECT
 	ru.customer_id,
     ru.date_of_order,
-    ru.days_since_last_order,
+    ru.days_since_last_order,is_repeat_new_first_copy
     ru.total_number_of_orders,
     ru.total_order_value,
     CONCAT(r.recency_score_three_parts, f.frequency_score_three_parts, m.monetary_score_three_parts) AS score_three_parts,

@@ -4,7 +4,6 @@ DROP TABLE IF EXISTS user_data_profile;
 CREATE TABLE user_data_profile AS
 SELECT 
     ubd.user_ptr_id,
-
     ubd.first_name,
     ubd.last_name,
     ubd.email,
@@ -49,6 +48,11 @@ SELECT
 	udkm.booking_count_started,
 	udkm.booking_count_future,
 	udkm.booking_count_other,
+	udkm.booking_count_not_cancel,
+
+	-- COUNTRY / CITY
+	udkm.all_countries_distinct,
+	udkm.all_cities_distinct,
 
     -- REVENUE STATS
 	udkm.booking_charge_total_less_discount_aed,
@@ -60,10 +64,10 @@ SELECT
 	udkm.booking_days_initial_only,
 	udkm.booking_days_extension_only,
 
-	-- KEY DATE METRICS
+	-- KEY DATE METRICS --
 	-- MOST RECENT DATES
     udkm.booking_first_created_date,
-	udkm.booking_most_recent_created_on,
+	udkm.booking_most_recent_created_date,
 	udkm.booking_most_recent_pickup_date,
 	udkm.booking_most_recent_return_date,
     
@@ -71,30 +75,66 @@ SELECT
 	udkm.booking_join_vs_first_created,
 	udkm.booking_first_created_vs_first_pickup,
 	udkm.booking_most_recent_created_on_vs_now,
-	udkm.booking_most_recent_return_vs_now,
+	udkm.booking_most_recent_return_vs_now, -- recency metric
+		
+	-- KEY STATS - REVENUE PER BOOKING & DAYS PER BOOKING
+	CASE
+		WHEN (udkm.booking_count_completed + udkm.booking_count_started) = 0 THEN 0 -- AVOID DIVIDING BY 0
+		WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0 -- AVOID DIVIDING INTO 0
+		ELSE (udkm.booking_days_total) / (udkm.booking_count_completed + udkm.booking_count_started) -- avg days per booking
+	END total_days_per_completed_and_started_bookings, -- frequency metric
+	CASE
+		WHEN (udkm.booking_count_completed + udkm.booking_count_started) = 0 THEN 0 -- AVOID DIVIDING BY 0
+		WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0 -- AVOID DIVIDING INTO 0
+		ELSE (udkm.booking_charge_total_less_discount_aed) / (udkm.booking_count_completed + udkm.booking_count_started) -- revenue per booking
+	END AS booking_charge__less_discount_aed_per_completed_started_bookings, -- monetary value metric
 
 	-- UTC NOW CONVERTED TO GST
 	udkm.date_now_gst,
+    
+    -- RFM SCORING --
+	-- CURRENT STATUS FOR STARTED & RENTER
+	CASE WHEN booking_count_started = 1 THEN "yes" ELSE "no" END AS is_currently_started,
+	CASE WHEN is_repeat_new_first IN ('canceller') THEN "yes" ELSE "no" END AS is_canceller,
+	CASE WHEN is_repeat_new_first IN ('repeat', 'first', 'new') THEN "yes" ELSE "no" END AS is_renter,
+	CASE WHEN is_repeat_new_first IN ('looker') THEN "yes" ELSE "no" END AS is_looker,
+	CASE WHEN is_repeat_new_first IN ('other') THEN "yes" ELSE "no" END AS is_other,
 
-	-- STATS CALCULATIONS
+	-- RECENCY = DIFF BETWEEN NOW & MOST RECENT RETURN DATE; LOWER NUMBER BETTER
+	-- udkm.booking_most_recent_return_vs_now AS rfm_recency_metric,
 	CASE
-		WHEN (udkm.booking_count_completed + udkm.booking_count_started) = 0 THEN 0
-		WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0
-		ELSE (udkm.booking_charge_total_less_discount_aed) / (udkm.booking_count_completed + udkm.booking_count_started)
-	END AS booking_charge__less_discount_aed_per_completed_started_bookings,
+		WHEN udkm.booking_most_recent_return_date IS NULL THEN NULL
+		ELSE udkm.booking_most_recent_return_vs_now
+	END AS rfm_recency_metric,
+
+	-- FREQENCY = AVERAGE DAYS PER COMPLETED/STARTED BOOKING
 	CASE
-		WHEN (udkm.booking_count_completed + udkm.booking_count_started) = 0 THEN 0
-		WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0
-		ELSE (udkm.booking_days_total) / (udkm.booking_count_completed + udkm.booking_count_started)
-	END total_days_per_completed_and_started_bookings
+		WHEN udkm.booking_most_recent_return_date IS NULL THEN NULL
+		WHEN (udkm.booking_count_completed + udkm.booking_count_started) = 0 THEN 0 -- AVOID DIVIDING BY 0
+		WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0 -- AVOID DIVIDING INTO 0
+		ELSE (udkm.booking_days_total) / (udkm.booking_count_completed + udkm.booking_count_started) -- avg days per booking
+	END AS rfm_frequency_metric,
+
+    -- MONETARY VALUE = AVERAGE VALUE PER COMPLETED/STARTED BOOKING
+	CASE
+		WHEN udkm.booking_most_recent_return_date IS NULL THEN NULL
+		WHEN (udkm.booking_count_completed + udkm.booking_count_started) = 0 THEN 0 -- AVOID DIVIDING BY 0
+		WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0 -- AVOID DIVIDING INTO 0
+		ELSE (udkm.booking_charge_total_less_discount_aed) / (udkm.booking_count_completed + udkm.booking_count_started) -- revenue per booking
+	END rfm_monetary_metric
 
 FROM ezhire_user_data.user_data_combined_booking_data AS ubd
 	LEFT JOIN user_data_key_metrics_rollup AS udkm ON udkm.user_ptr_id = ubd.user_ptr_id
 -- WHERE 
---     ubd.date_join_formatted_gst = '2024-01-01'
+    -- ubd.date_join_formatted_gst = '2024-01-01'
 	-- AND
 	-- ubd.user_ptr_id IN ('549331')
-GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40
+	-- ubd.user_ptr_id IN ('549331', '419418', '593518', '593396') -- all above first, repeat, canceller, canceller
+	-- ubd.user_ptr_id IN ('11022')			-- recency score -196586, most recent return date '2562-08-10' & rental cancelled
+	-- booking_count_started = 0
+	-- AND
+	-- udkm.booking_most_recent_return_vs_now < 0
+GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45
 ORDER BY ubd.user_ptr_id;
 
 -- QUERY ENTIRE user_and_booking_data DB
