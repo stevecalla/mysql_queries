@@ -13,13 +13,20 @@ rfm work
   -- DONE = rfm summary - add # of bookings
   -- DONE = exclude booking future and booking other
   -- DONE = adjust when booking join date > booking_date/created on
+  -- DONE customer waterfall in waterfall?
 
-  -- customer waterfall in waterfall?
+  -- create histogram / descriptive stats
+
+  -- DONE = need country / city dimension
+  -- score by country
+	-- start with UAE
   -- custom parts? create custom score ranges
 
   -- fix booking join vs first created... large numbers likely due to first created 1980?
 
 rfm - renters
+ = distinguish by country / city?
+
  = NOT STARTED = is_currently_started = no
  = MOST RECENT BOOKING VS NOW > 0 = booking_most_recent_return_vs_now >= 0 (ensures no negative values; return dates in the future)
  = HAS RENTED = is_renter = yes (is_renter = 'Repeat', 'First', 'New')

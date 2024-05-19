@@ -68,8 +68,8 @@ WHERE
         AND rfm_recency_metric >= 0 -- 91,950 row(s)
         AND booking_charge__less_discount_aed_per_completed_started_bookings >= 0 -- 91,813 row(s)
         AND total_days_per_completed_and_started_bookings >= 0 -- 91,813
-        -- AND all_countries_distinct LIKE 'United Arab Emirates' -- 80,105 only UAE (not UAE and other countries)
         AND all_countries_distinct LIKE '%United Arab Emirates%' -- 80,487 UAE combined with other countries
+        -- AND all_countries_distinct LIKE 'United Arab Emirates' -- 80,105 only UAE (not UAE and other countries)
 ORDER BY rfm_recency_metric DESC, booking_most_recent_return_date ASC;
 
 -- -- CREATE FREQUENY RANKING BASE
@@ -121,8 +121,8 @@ WHERE
         AND rfm_recency_metric >= 0 -- 91,950 row(s)
         AND booking_charge__less_discount_aed_per_completed_started_bookings >= 0 -- 91,813 row(s)
         AND total_days_per_completed_and_started_bookings >= 0 -- 91,813
-        -- AND all_countries_distinct LIKE 'United Arab Emirates' -- 80,105 only UAE (not UAE and other countries)
         AND all_countries_distinct LIKE '%United Arab Emirates%' -- 80,487 UAE combined with other countries
+        -- AND all_countries_distinct LIKE 'United Arab Emirates' -- 80,105 only UAE (not UAE and other countries)
 ORDER BY rfm_frequency_metric, booking_most_recent_return_date ASC;
 
 -- -- CREATE MONETARY RANKING BASE
@@ -174,8 +174,8 @@ WHERE
         AND rfm_recency_metric >= 0 -- 91,950 row(s)
         AND booking_charge__less_discount_aed_per_completed_started_bookings >= 0 -- 91,813 row(s)
         AND total_days_per_completed_and_started_bookings >= 0 -- 91,813
-        -- AND all_countries_distinct LIKE 'United Arab Emirates' -- 80,105 only UAE (not UAE and other countries)
         AND all_countries_distinct LIKE '%United Arab Emirates%' -- 80,487 UAE combined with other countries
+        -- AND all_countries_distinct LIKE 'United Arab Emirates' -- 80,105 only UAE (not UAE and other countries)
 ORDER BY rfm_monetary_metric, booking_most_recent_return_date ASC;
 
 SELECT * FROM rfm_score_recency_data ORDER BY booking_most_recent_return_vs_now DESC;
@@ -185,7 +185,7 @@ SELECT * FROM rfm_score_monetary_data;
 DROP TABLE IF EXISTS rfm_score_summary_data;
 CREATE TABLE rfm_score_summary_data
 SELECT
-    r.*,
+    r.*,    
     -- r.booking_most_recent_return_vs_now,
     f.total_days_per_completed_and_started_bookings,
     m.booking_charge__less_discount_aed_per_completed_started_bookings,
