@@ -1,6 +1,6 @@
 USE myproject;
 
-SET @str_date = '2023-01-01', @end_date = '2023-01-01';
+SET @str_date = '2024-01-01', @end_date = '2024-01-01';
 
 -- ********* START ************ CHANGE LOG
 -- 042324 Query was running many times slower for some reason starting ~4/15/24
@@ -8,6 +8,10 @@ SET @str_date = '2023-01-01', @end_date = '2023-01-01';
 -- 4/23/24 Added LIMIT 1 to subqueries given error returning more than 1 row
 -- 4/29/24 adjust delivery lat & lng to remove comma
 -- 5/13/24 add discount_charge_aed
+
+-- 5/21/24 adjust for early return
+    -- review / adjust return date? 225443
+    -- review / adjust revenue?
 -- ********* END *************** CHANGE LOG
 
 SELECT 
@@ -882,10 +886,14 @@ FROM
     LEFT JOIN country_conversion_rate ct ON ci.CountryID = ct.country_id -- CHANGE
 
 	-- FOR USE IN MYSQL WITH VARIABLES IN LINE 1
-	WHERE 
-        DATE(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) BETWEEN @str_date AND @end_date
-		AND COALESCE(b.vendor_id,'') NOT IN (5, 33, 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
-		AND (LOWER(au.first_name) NOT LIKE '%test%' AND LOWER(au.last_name) NOT LIKE '%test%' AND LOWER(au.username) NOT LIKE '%test%' AND LOWER(au.email) NOT LIKE '%test%')
+	-- WHERE 
+    --     DATE(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) BETWEEN @str_date AND @end_date
+	-- 	AND COALESCE(b.vendor_id,'') NOT IN (5, 33, 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
+	-- 	AND (LOWER(au.first_name) NOT LIKE '%test%' AND LOWER(au.last_name) NOT LIKE '%test%' AND LOWER(au.username) NOT LIKE '%test%' AND LOWER(au.email) NOT LIKE '%test%')
+
+    -- adjust early return information
+    WHERE 
+        b.id IN ('225443', '210299', '30174')
 
 	-- FOR TESTING / AUDITING ******* START *********
     -- HAVING booking_charge_less_discount < 0

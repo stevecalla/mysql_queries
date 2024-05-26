@@ -14,29 +14,29 @@ rfm work
   -- DONE = exclude booking future and booking other
   -- DONE = adjust when booking join date > booking_date/created on
   -- DONE customer waterfall in waterfall?
-
-  -- create histogram / descriptive stats
-
+  -- DONE create histogram / descriptive stats
   -- DONE = need country / city dimension
-  -- score by country
-	-- start with UAE
-  -- custom parts? create custom score ranges
-
-  -- fix booking join vs first created... large numbers likely due to first created 1980?
 
 rfm - renters
- = distinguish by country / city?
+ 1 = HAS RENTED = is_renter = yes (is_renter = 'Repeat', 'First', 'New')
+ 2 = NOT STARTED = is_currently_started = no
+ 3 = ELIMINATE FUTURE BOOKINGS USERS = booking count future = 0
+ 4 = ELIMINATE BOOKINGS IN OTHER STATUS = booking count other = 0
+ 5 = HAS A VALID BOOKING DATE = booking_most_recent_return_date IS NOT NULL = confirms a return date exists
+ 6 = MOST RECENT BOOKING VS NOW > 0 = booking_most_recent_return_vs_now >= 0 (ensures no negative values; return dates in the future)
+ 7 = ELIMINATE NEGATIVE BOOKING VALUES = booking_charge__less_discount_aed_per_completed_started_bookings >= 0
+ 8 = total_days_per_completed_and_started_bookings >= 0 (same as 6)
+ 9 = UAE RENTAL COMPLETED ONLY = distinguish by country / city
 
- = NOT STARTED = is_currently_started = no
- = MOST RECENT BOOKING VS NOW > 0 = booking_most_recent_return_vs_now >= 0 (ensures no negative values; return dates in the future)
- = HAS RENTED = is_renter = yes (is_renter = 'Repeat', 'First', 'New')
- = HAS A VALID BOOKING DATE = booking_most_recent_return_date IS NOT NULL = confirms a return date exists
- = ELIMINATE NEGATIVE BOOKING VALUES = booking_charge__less_discount_aed_per_completed_started_bookings >= 0
- = ELIMINATE FUTURE BOOKINGS USERS = booking count future = 0
- = ELIMINATE BOOKINGS IN OTHER STATUS = booking count other = 0
-
- = WHERE (is_currently_started LIKE "no" AND rfm_recency_metric >= 0) AND is_renter = "yes" AND booking_most_recent_return_date IS NOT NULL AND booking_charge__less_discount_aed_per_completed_started_bookings >= 0 AND booking_count_future = 0 AND booking_count_other = 0
-
-- total		594,998
-- records 	71,452
-- records 	71,354 booking_count_future = 0 & booking_count_other = 0
+---------------WATERFALL-----------------
+WHERE 
+    is_renter = "yes" 									-- 95,129 row(s) 	IN ('repeat', 'first', 'new')
+        AND is_currently_started LIKE "no" 						-- 92,200 row(s)
+        AND booking_count_future = 0 
+        AND booking_count_other = 0 							-- 91,989 row(s)
+        AND booking_most_recent_return_date IS NOT NULL 				-- 91,984 row(s)
+        AND rfm_recency_metric >= 0 							-- 91,950 row(s)
+        AND booking_charge__less_discount_aed_per_completed_started_bookings >= 0 	-- 91,813 row(s)
+        AND total_days_per_completed_and_started_bookings >= 0 				-- 91,813 		(AND rfm_recency_metric >= 0)	
+        AND all_countries_distinct LIKE '%United Arab Emirates%' 			-- 80,487 		UAE combined with other countries
+        -- AND all_countries_distinct LIKE 'United Arab Emirates' 			-- 80,105 		only UAE (not UAE and other countries)
