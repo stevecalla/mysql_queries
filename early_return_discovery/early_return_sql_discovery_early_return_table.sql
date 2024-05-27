@@ -23,7 +23,8 @@ ORDER BY duplicate_count DESC;
 SELECT *
 FROM rental_early_return_bookings
 WHERE booking_id IN (
-    SELECT booking_id
+    SELECT 
+		booking_id
     FROM rental_early_return_bookings
     GROUP BY booking_id
     HAVING COUNT(*) > 1
@@ -36,7 +37,9 @@ SELECT
     MAX(date_created) AS most_recent_created_on
 FROM rental_early_return_bookings
 WHERE 
-    booking_id IN ('225443', '210299', '30174')
+    -- booking_id IN ('225443', '210299', '30174')
+    -- booking_id IN ('240709', '240727', '240755') -- extension days & early return
+    booking_id IN ('240727') -- extension days & early return
 GROUP BY booking_id
 ORDER BY booking_id;
 
@@ -59,6 +62,18 @@ WHERE
 	-- early_return = 1 -- CAN'T USE AS FILTER BECAUSE SOME BOOKINGS (SUCH AS 30174) NOT CODED AS EARLY RETURN = 1
 	-- AND
     -- b.id IN ('30174') -- NOT CODE IN rental_car_bookingv2 as early_return;
-    b.id IN ('225443', '210299', '30174')
+    -- b.id IN ('225443', '210299', '30174')
+    b.id IN ('240709', '240727', '240755') -- extension days & ealry return
 ORDER BY STR_TO_DATE(b.return_date_string, '%d/%m/%Y') DESC;
 -- LIMIT 10;
+
+SELECT 
+	*,
+	booking_id
+FROM rental_charges
+WHERE 
+	-- booking_id IN ("210299")
+	-- booking_id IN ('240709', '240727', '240755') -- extension days & early return
+	booking_id IN ('240727') -- extension days & early return
+ORDER BY booking_id, from_date, charge_type_id
+LIMIT 200;

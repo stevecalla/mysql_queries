@@ -345,6 +345,7 @@ FROM
             DATE_FORMAT(CONCAT(STR_TO_DATE(b.deliver_date_string, '%d/%m/%Y'), ' ', b.deliver_time_string), '%W') pickup_day_of_week_v2,
             DATE_FORMAT(CONCAT(STR_TO_DATE(b.deliver_date_string, '%d/%m/%Y'), ' ', b.deliver_time_string), '%H') pickup_time_bucket,
             
+            -- ADJUST FOR EARLY RETURN DATE; IF EARLY RETURN FLAG = 1 THEN USE THE 
             DATE_FORMAT(CONCAT(STR_TO_DATE(b.return_date_string, '%d/%m/%Y'), ' ', b.return_time_string), '%Y-%m-%d %H:%i:%s') AS return_datetime,
             DATE_FORMAT(CONCAT(STR_TO_DATE(b.return_date_string, '%d/%m/%Y'), ' ', b.return_time_string), '%Y') return_year,
             QUARTER(STR_TO_DATE(b.return_date_string, '%d/%m/%Y')) AS return_quarter,
@@ -546,6 +547,7 @@ FROM
                     am.id = b.millage_id
                 LIMIT 1), 0) AS millage_cap_km, -- CHANGE LIMIT
 
+            -- EARLY RETURN
             IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
@@ -554,6 +556,7 @@ FROM
                     cc.booking_id = b.id
                         AND cc.charge_type_id = 4), 0) AS rent_charge,
 
+            -- EARLY RETURN FLAG
             IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
@@ -561,6 +564,8 @@ FROM
                 WHERE
                     cc.booking_id = b.id
                         AND cc.charge_type_id IN (31 , 30)), 0) AS extra_day_charge,
+
+            -- EARLY RETURN FLAG
             IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
@@ -568,6 +573,8 @@ FROM
                 WHERE
                     cc.booking_id = b.id
                         AND cc.charge_type_id = 11), 0) AS delivery_charge,
+
+            -- EARLY RETURN FLAG
             IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
@@ -575,6 +582,7 @@ FROM
                 WHERE
                     cc.booking_id = b.id
                         AND cc.charge_type_id = 3), 0) AS collection_charge,
+
             IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
@@ -893,7 +901,8 @@ FROM
 
     -- adjust early return information
     WHERE 
-        b.id IN ('225443', '210299', '30174')
+        -- b.id IN ('225443', '210299', '30174')
+        b.id IN ('210299', '30174')
 
 	-- FOR TESTING / AUDITING ******* START *********
     -- HAVING booking_charge_less_discount < 0

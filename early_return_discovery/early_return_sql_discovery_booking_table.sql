@@ -16,7 +16,13 @@ SHOW COLUMNS FROM rental_car_booking2;
 SELECT DISTINCT(early_return), COUNT(*) FROM rental_car_booking2 GROUP BY early_return WITH ROLLUP LIMIT 10;
 
 -- STEP #4: GET A SAMPLE OF EARLY RETURNS
-SELECT *, early_return AS v2 FROM rental_car_booking2 WHERE id IN ('225443', '210299', '30174', '267504', '264106') LIMIT 10;
+SELECT 
+    *, early_return AS v2 
+FROM rental_car_booking2 
+WHERE 
+    -- id IN ('225443', '210299', '30174', '267504', '264106', '240667') 
+    id IN ('210299', '30174', '267504', '264106', '240667') 
+LIMIT 10;
 -- NOTE THAT 30174 early_return = 0 BUT IT DOES HAVE A RECORD IN THE EARLY RETURN TABLE
 -- NOTE THAT 267504 A& 264106 ARE TEST BOOKINGS
 
@@ -36,9 +42,11 @@ SELECT
 FROM rental_car_booking2 AS b
     LEFT JOIN rental_status AS rs ON rs.id = b.status
 	LEFT JOIN (SELECT MAX(booking_id), booking_id, old_return_date, new_return_date, new_return_time FROM rental_early_return_bookings AS er GROUP BY booking_id) er ON er.booking_id = b.id -- RETURNS MOST RECENT RECORD FOR EACH booking_id
--- WHERE 
+WHERE 
 	-- b.early_return = 1
-    -- b.id IN ('225443', '210299', '30174')
+    -- AND
+    -- b.id IN ('225443', '210299', '30174', '240667')
+    b.id IN ('210299', '30174', '240667')
 ORDER BY STR_TO_DATE(b.return_date_string, '%d/%m/%Y') DESC;
 -- LIMIT 10;
 
