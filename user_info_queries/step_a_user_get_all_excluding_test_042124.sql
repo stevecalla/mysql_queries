@@ -1,8 +1,8 @@
 USE myproject;
 
--- SET
--- 	@str_date = '2024-01-01',
--- 	@end_date = '2024-01-31';
+SET
+	@str_date = '2024-01-01',
+	@end_date = '2024-01-01';
 
 -- GET FIELD NAMES & TYPES FROM USER TABLE
 SELECT * FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'myproject' AND TABLE_NAME = 'rental_fuser';
@@ -130,9 +130,11 @@ FROM
     rental_fuser AS fuser
     LEFT JOIN myproject.auth_user AS auth_user ON auth_user.id = fuser.user_ptr_id
 WHERE
-    -- DATE FILTER
-    -- DATE(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) BETWEEN @str_date AND @end_date
-    -- DATE(fuser.date_join) = '2024-01-01' -- GET SAMPLE DATA
+    -- DATE FILTER 
+    -- DATE(DATE_ADD(fuser.date_join, INTERVAL 4 HOUR)) BETWEEN @str_date AND @end_date
+    
+    -- USE IN JS SQL BECAUSE SET DOESN'T WORK
+    -- DATE(DATE_ADD(fuser.date_join, INTERVAL 4 HOUR)) BETWEEN '2024-01-01' AND '2024-01-01'
     -- AND
 
     -- auth_user.id IN ('109711', '232623', '495776') -- first or last name contains arabic characters & errors
@@ -140,7 +142,8 @@ WHERE
     -- auth_user.id IN ('364173') -- bad date = 0000-00-00 & errors
     -- -- auth_user.id IN ('97967') -- bad date of birth 2020-11-00
     -- auth_user.id IN ('476528', '478349') -- email address includes \n
-    -- AND
+
+    AND
 
     -- LOGIC EXCLUDE TEST USERS FROM auth_user
     LOWER(auth_user.first_name) NOT LIKE '%test%'

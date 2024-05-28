@@ -7,6 +7,11 @@ SET @str_date = '2024-01-01', @end_date = '2024-01-01';
 -- 042324 Team replaced several inline queries with joins
 -- 4/23/24 Added LIMIT 1 to subqueries given error returning more than 1 row
 -- 4/29/24 adjust delivery lat & lng to remove comma
+-- 5/13/24 add discount_charge_aed
+
+-- 5/21/24 adjust for early return
+    -- review / adjust return date? 225443
+    -- review / adjust revenue?
 -- ********* END *************** CHANGE LOG
 
 SELECT 
@@ -206,6 +211,7 @@ SELECT
     IFNULL(other_rental_charge, 0) AS other_rental_charge,
 
     IFNULL(discount_charge, 0) AS discount_charge,
+    IFNULL(discount_charge * tb.conversion_rate, 0) AS discount_charge_aed,
     IFNULL(discount_extension_charge, 0) AS discount_extension_charge,
 
     IFNULL(total_vat, 0) AS total_vat,
@@ -339,6 +345,7 @@ FROM
             DATE_FORMAT(CONCAT(STR_TO_DATE(b.deliver_date_string, '%d/%m/%Y'), ' ', b.deliver_time_string), '%W') pickup_day_of_week_v2,
             DATE_FORMAT(CONCAT(STR_TO_DATE(b.deliver_date_string, '%d/%m/%Y'), ' ', b.deliver_time_string), '%H') pickup_time_bucket,
             
+            -- ADJUST FOR EARLY RETURN DATE; IF EARLY RETURN FLAG = 1 THEN USE THE 
             DATE_FORMAT(CONCAT(STR_TO_DATE(b.return_date_string, '%d/%m/%Y'), ' ', b.return_time_string), '%Y-%m-%d %H:%i:%s') AS return_datetime,
             DATE_FORMAT(CONCAT(STR_TO_DATE(b.return_date_string, '%d/%m/%Y'), ' ', b.return_time_string), '%Y') return_year,
             QUARTER(STR_TO_DATE(b.return_date_string, '%d/%m/%Y')) AS return_quarter,
@@ -540,6 +547,7 @@ FROM
                     am.id = b.millage_id
                 LIMIT 1), 0) AS millage_cap_km, -- CHANGE LIMIT
 
+            -- EARLY RETURN
             IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
@@ -548,6 +556,7 @@ FROM
                     cc.booking_id = b.id
                         AND cc.charge_type_id = 4), 0) AS rent_charge,
 
+            -- EARLY RETURN FLAG
             IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
@@ -555,6 +564,8 @@ FROM
                 WHERE
                     cc.booking_id = b.id
                         AND cc.charge_type_id IN (31 , 30)), 0) AS extra_day_charge,
+
+            -- EARLY RETURN FLAG
             IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
@@ -562,6 +573,8 @@ FROM
                 WHERE
                     cc.booking_id = b.id
                         AND cc.charge_type_id = 11), 0) AS delivery_charge,
+
+            -- EARLY RETURN FLAG
             IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
@@ -569,6 +582,7 @@ FROM
                 WHERE
                     cc.booking_id = b.id
                         AND cc.charge_type_id = 3), 0) AS collection_charge,
+
             IFNULL((SELECT 
                     SUM(total_charge)
                 FROM
@@ -880,10 +894,15 @@ FROM
     LEFT JOIN country_conversion_rate ct ON ci.CountryID = ct.country_id -- CHANGE
 
 	-- FOR USE IN MYSQL WITH VARIABLES IN LINE 1
-	WHERE 
-        DATE(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) BETWEEN @str_date AND @end_date
-		AND COALESCE(b.vendor_id,'') NOT IN (5, 33, 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
-		AND (LOWER(au.first_name) NOT LIKE '%test%' AND LOWER(au.last_name) NOT LIKE '%test%' AND LOWER(au.username) NOT LIKE '%test%' AND LOWER(au.email) NOT LIKE '%test%')
+	-- WHERE 
+    --     DATE(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) BETWEEN @str_date AND @end_date
+	-- 	AND COALESCE(b.vendor_id,'') NOT IN (5, 33, 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
+	-- 	AND (LOWER(au.first_name) NOT LIKE '%test%' AND LOWER(au.last_name) NOT LIKE '%test%' AND LOWER(au.username) NOT LIKE '%test%' AND LOWER(au.email) NOT LIKE '%test%')
+
+    -- adjust early return information
+    WHERE 
+        -- b.id IN ('225443', '210299', '30174')
+        b.id IN ('210299', '30174')
 
 	-- FOR TESTING / AUDITING ******* START *********
     -- HAVING booking_charge_less_discount < 0
