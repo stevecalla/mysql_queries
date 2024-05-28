@@ -1,6 +1,6 @@
 USE myproject;
 
-SET @str_date = '2024-01-01', @end_date = '2024-01-01';
+SET @str_date = '2024-01-01', @end_date = '2024-12-31';
 
 -- ********* START ************ CHANGE LOG
 -- 5/21/24 adjust for early return  
@@ -707,7 +707,7 @@ FROM
                 WHEN b.early_return = 0 THEN
                     IFNULL((
                         SELECT 
-                            SUM(total_charge)
+                            SUM(total_charge) / days
                         FROM
                             myproject.rental_charges cc
                         WHERE
@@ -716,7 +716,7 @@ FROM
                 ELSE 
                     IFNULL((
                         SELECT 
-                            SUM(total_charge)
+                            SUM(total_charge) / days
                         FROM
                             myproject.rental_early_return_charges as erc
                         WHERE
@@ -1287,11 +1287,12 @@ FROM
 	LEFT JOIN (SELECT MAX(booking_id), booking_id, old_return_date, new_return_date, new_return_time, new_days FROM rental_early_return_bookings AS er GROUP BY booking_id) er ON er.booking_id = b.id -- RETURNS MOST RECENT DATE RECORDS FOR EACH booking_id
 
 	-- FOR USE IN MYSQL WITH VARIABLES IN LINE 1
-	WHERE 
-        DATE(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) BETWEEN @str_date AND @end_date
-		AND COALESCE(b.vendor_id,'') NOT IN (5, 33, 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
-		AND (LOWER(au.first_name) NOT LIKE '%test%' AND LOWER(au.last_name) NOT LIKE '%test%' AND LOWER(au.username) NOT LIKE '%test%' AND LOWER(au.email) NOT LIKE '%test%')
+	-- WHERE 
+    --     DATE(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) BETWEEN @str_date AND @end_date
+	-- 	AND COALESCE(b.vendor_id,'') NOT IN (5, 33, 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
+	-- 	AND (LOWER(au.first_name) NOT LIKE '%test%' AND LOWER(au.last_name) NOT LIKE '%test%' AND LOWER(au.username) NOT LIKE '%test%' AND LOWER(au.email) NOT LIKE '%test%')
 
+    WHERE b.id IN ('182520', '182582', '178575')
     -- adjust early return information
     -- WHERE 
         -- b.id IN ('225443', '210299', '30174')
