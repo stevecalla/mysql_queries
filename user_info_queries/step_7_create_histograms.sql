@@ -1,7 +1,7 @@
 -- STEP #7: CREATE RFM HISTOGRAMS FOR CUSTOM RANGES
 USE ezhire_user_data;
 
-SET @bin_count = 5;
+SET @bin_count = 3;
 
 -- RECENCY BINS
 WITH recency_binned_data AS (

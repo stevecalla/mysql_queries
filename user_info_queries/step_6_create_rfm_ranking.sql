@@ -42,7 +42,7 @@ CREATE TABLE rfm_score_recency_data
         --     ELSE 3
         -- END AS recency_score_three_parts,
         
-        NTILE(5) OVER (ORDER BY rfm_recency_metric DESC) AS recency_score_five_parts,
+        NTILE(5) OVER (ORDER BY rfm_recency_metric DESC) AS recency_score_five_parts
         -- CASE
         -- 	WHEN ROW_NUMBER() OVER (ORDER BY rfm_recency_metric, booking_most_recent_return_date) / COUNT(*) OVER () > 0.80 THEN 1
         -- 	WHEN ROW_NUMBER() OVER (ORDER BY rfm_recency_metric, booking_most_recent_return_date) / COUNT(*) OVER () > 0.60 THEN 2
