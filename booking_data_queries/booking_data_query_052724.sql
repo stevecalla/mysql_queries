@@ -3,7 +3,7 @@ USE myproject;
 SET @str_date = '2024-01-01', @end_date = '2024-01-01';
 
 -- ********* START ************ CHANGE LOG
--- 5/21/24 adjust for early return
+-- 5/21/24 adjust for early return  
 -- ********* END *************** CHANGE LOG
 
 SELECT 
