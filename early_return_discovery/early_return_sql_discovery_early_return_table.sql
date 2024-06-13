@@ -1,3 +1,4 @@
+-- rental_early_return_bookings discovery
 USE myproject;
 
 -- STEP #1: DONE == REVIEW EARLY RETURN TABLE; RECORDS 16,889
@@ -57,7 +58,9 @@ SELECT
 FROM rental_car_booking2 AS b
     LEFT JOIN rental_status AS rs ON rs.id = b.status
     -- LEFT JOIN rental_early_return_bookings AS er ON b.id = er.booking_id -- NEED TO GET THE MOST RECENT RECORD TO ACCOUNT FOR DUPLICATES
-	LEFT JOIN (SELECT MAX(booking_id), booking_id, old_return_date, new_return_date, new_return_time FROM rental_early_return_bookings AS er GROUP BY booking_id) er ON er.booking_id = b.id
+	-- LEFT JOIN (SELECT MAX(booking_id), booking_id, old_return_date, new_return_date, new_return_time FROM rental_early_return_bookings AS er GROUP BY booking_id) er ON er.booking_id = b.id
+
+    LEFT JOIN rental_early_return_bookings AS er ON er.booking_id = b.id AND er.is_active = 1 -- RETURNS MOST RECENT DATE RECORDS FOR EACH booking_id using is_active flag 1
 WHERE 
 	-- early_return = 1 -- CAN'T USE AS FILTER BECAUSE SOME BOOKINGS (SUCH AS 30174) NOT CODED AS EARLY RETURN = 1
 	-- AND
