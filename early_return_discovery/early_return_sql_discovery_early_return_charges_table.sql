@@ -1,19 +1,23 @@
 -- rental_early_return_charges discovery
 USE myproject;
-
--- STEP #1: DONE == REVIEW EARLY RETURN CHARGES TABLE; RECORDS 106,966
+--															early June	06/24/24
+-- STEP #1: DONE == REVIEW EARLY RETURN CHARGES TABLE		106,966		
 -- STEP #2: REVIEW RECORDS FOR SAMPLE
 -- STEP #3: REVIEW EXTENSION DAYS
 -- STEP #4: REVIEW RENTAL CHARGES TABLE
-
+ 
 -- STEP #1
-SELECT * FROM rental_early_return_charges LIMIT 10;
+SELECT * FROM rental_early_return_charges;
 
 -- STEP #2: REVIEW RECORDS FOR SAMPLE
 SELECT 
 	* 
 FROM rental_early_return_charges 
 WHERE 
+	booking_id IN ('29837', '11031') -- 29837 STILL $0 REVENUE AS OF 6/25/24; 11031 HAD NO REVENUE AS OF 6/5/24 BUT DOES AS OF 6/25/24
+ORDER BY booking_id;
+
+-- OTHER EXMAPLES FOR QUERY ABOVE
 	-- booking_id IN ('30174'); -- NO RECORDS
 	-- booking_id IN ('210299');
 	-- booking_id IN ('225443');
@@ -21,7 +25,7 @@ WHERE
 	-- booking_id IN ('240709');  -- extension days & early return 3334.82, 61 days, 47.61/day
 	-- booking_id IN ('240755');  -- extension days & early return 1333.54, 11 days, 114.14/day
 	-- booking_id IN ('240727'); -- extension days & early return 1975.15, 19 days, 99.85/day
-	booking_id IN ('21899'); -- issue with additional driver rate on early return charge table
+	-- booking_id IN ('21899'); -- issue with additional driver rate on early return charge table
 	-- booking_id IN ('105780'); -- early return; no record in early return charges table
     -- booking_id IN ('101065'); -- early return; no record in early return charges table
 	-- type_name = 'Additional Driver' AND total_charge > 100000;
@@ -54,21 +58,5 @@ WHERE
 	booking_id IN ('21899') -- issue with additional driver rate on early return charge table
 	-- booking_id IN ('105780') -- no record in early return table?
     -- booking_id IN ('101065') -- no record in early return table?
-ORDER BY booking_id, from_date, charge_type_id
-LIMIT 200;
-
--- STEP #4 - REVIEW RENTAL CHARGES TABLE
-SELECT 
-	*,
-	booking_id
-FROM myproject.rental_charges
-WHERE 
-	-- booking_id IN ("225443")
-	-- booking_id IN ("210299")
-	-- booking_id IN ('240709', '240727', '240755') -- extension days & early return
-	-- booking_id IN ('240727') -- extension days & early return
-	booking_id IN ('21899') -- issue with additional driver rate on early return charge table
-	-- booking_id IN ('105780') -- no record in early return table?
-    -- booking_id IN ('101065')
 ORDER BY booking_id, from_date, charge_type_id
 LIMIT 200;
