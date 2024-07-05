@@ -1,0 +1,28 @@
+USE ezhire_user_data;
+
+SELECT * FROM rfm_score_summary_data;
+
+SELECT created_at, count(*) FROM rfm_score_summary_data GROUP BY created_at WITH ROLLUP;
+
+SELECT * FROM rfm_score_summary_data_backup;
+
+SELECT created_at, count(*) FROM rfm_score_summary_data_backup GROUP BY created_at WITH ROLLUP;
+
+SELECT * FROM rfm_score_summary_history_data;
+
+SELECT created_at_date, count(*) FROM rfm_score_summary_history_data GROUP BY created_at_date WITH ROLLUP;
+
+SELECT * FROM rfm_score_summary_history_data_backup;
+
+SELECT created_at_date, count(*) FROM rfm_score_summary_history_data_backup GROUP BY created_at_date WITH ROLLUP;
+
+SELECT * FROM rfm_score_summary_history_data_backup_v2;
+
+SELECT created_at_date, count(*) FROM rfm_score_summary_history_data_backup_v2 GROUP BY created_at_date WITH ROLLUP;
+
+SELECT min_created_at_date, max_created_at_date, count(*) FROM rfm_score_summary_history_data_tracking GROUP BY min_created_at_date, max_created_at_date ORDER BY count(*);
+
+SELECT min_created_at_date, max_created_at_date, count(*) FROM rfm_score_summary_history_data_tracking_most_recent GROUP BY min_created_at_date, max_created_at_date ORDER BY count(*);
+
+SELECT * FROM ezhire_user_data.user_data_combined_booking_data LIMIT 10;
+
