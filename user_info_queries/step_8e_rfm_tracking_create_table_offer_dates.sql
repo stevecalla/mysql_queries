@@ -1,33 +1,12 @@
 USE ezhire_user_data;
 
-SET @min_created_at_date = (SELECT MIN(created_at_date) AS min_created_at_date
-								FROM (
-									SELECT created_at_date
-									FROM rfm_score_summary_history_data
-									GROUP BY created_at_date
-									ORDER BY created_at_date DESC
-									LIMIT 2
-							) AS recent_dates);
-SET @min_created_at_date_formatted = STR_TO_DATE((SELECT MIN(created_at_date) AS min_created_at_date
-								FROM (
-									SELECT created_at_date
-									FROM rfm_score_summary_history_data
-									GROUP BY created_at_date
-									ORDER BY created_at_date DESC
-									LIMIT 2
-							) AS recent_dates), '%m/%d/%Y');
-SET @max_created_at_date = (SELECT MAX(created_at_date) AS min_created_at_date
-								FROM (
-									SELECT created_at_date
-									FROM rfm_score_summary_history_data
-									GROUP BY created_at_date
-									ORDER BY created_at_date DESC
-									LIMIT 2
-							) AS recent_dates);
-				
-DROP TABLE IF EXISTS rfm_score_summary_history_data_tracking_most_recent;
+SET @min_created_at_date = (SELECT MIN(created_at_date) FROM rfm_score_summary_history_data);
+SET @min_created_at_date_formatted = STR_TO_DATE((SELECT MIN(created_at_date) FROM rfm_score_summary_history_data), '%m/%d/%Y');
+SET @max_created_at_date = (SELECT MAX(created_at_date) FROM rfm_score_summary_history_data);
 
-CREATE TABLE rfm_score_summary_history_data_tracking_most_recent AS
+DROP TABLE IF EXISTS rfm_score_summary_history_data_tracking_offer;
+
+CREATE TABLE rfm_score_summary_history_data_tracking_offer AS
 SELECT 
     *,
     CASE
@@ -100,7 +79,7 @@ FROM (
     GROUP BY rfm.user_ptr_id, rfm.date_join_cohort, rfm.is_repeat_new_first, rfm.all_cities_distinct, rfm.all_countries_distinct, rfm.booking_count_total, rfm.booking_count_cancel, rfm.booking_count_completed, rfm.booking_count_started, rfm.booking_count_future, rfm.booking_count_other, rfm.is_currently_started, b.booking_id, b.status, b.booking_type, b.deliver_method, b.car_cat_name, b.marketplace_or_dispatch, b.promo_code, b.has_promo_code, b.booking_date, b.pickup_date, b.return_date, b.booking_charge_less_discount
 ) AS a;
 
-SELECT * FROM rfm_score_summary_history_data_tracking_most_recent;
-SELECT min_created_at_date, max_created_at_date, count(*) FROM rfm_score_summary_history_data_tracking_most_recent GROUP BY min_created_at_date, max_created_at_date ORDER BY count(*);
-SELECT rfm_segment_three_parts, min_created_at_date, max_created_at_date, count(*) FROM rfm_score_summary_history_data_tracking_most_recent GROUP BY rfm_segment_three_parts, min_created_at_date, max_created_at_date WITH ROLLUP ORDER BY count(*);
-SELECT rfm_segment_five_parts, min_created_at_date, max_created_at_date, count(*) FROM rfm_score_summary_history_data_tracking_most_recent GROUP BY rfm_segment_five_parts, min_created_at_date, max_created_at_date WITH ROLLUP ORDER BY count(*);
+SELECT * FROM rfm_score_summary_history_data_tracking_offer;
+SELECT min_created_at_date, max_created_at_date, count(*) FROM rfm_score_summary_history_data_tracking_offer GROUP BY min_created_at_date, max_created_at_date ORDER BY count(*);
+SELECT rfm_segment_three_parts, min_created_at_date, max_created_at_date, count(*) FROM rfm_score_summary_history_data_tracking_offer GROUP BY rfm_segment_three_parts, min_created_at_date, max_created_at_date WITH ROLLUP ORDER BY count(*);
+SELECT rfm_segment_five_parts, min_created_at_date, max_created_at_date, count(*) FROM rfm_score_summary_history_data_tracking_offer GROUP BY rfm_segment_five_parts, min_created_at_date, max_created_at_date WITH ROLLUP ORDER BY count(*);
