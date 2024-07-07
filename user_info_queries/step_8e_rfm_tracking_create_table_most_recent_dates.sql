@@ -30,6 +30,7 @@ DROP TABLE IF EXISTS rfm_score_summary_history_data_tracking_most_recent;
 CREATE TABLE rfm_score_summary_history_data_tracking_most_recent AS
 SELECT 
     *,
+	-- RFM SEGMENTS
     CASE
         WHEN score_three_parts_as_of_initial_date = 0 THEN 'new'
         WHEN booking_count > 0 THEN 'booker'
@@ -79,8 +80,14 @@ FROM (
         COUNT(b.booking_id) AS booking_count,
         @min_created_at_date AS min_created_at_date,
         @max_created_at_date AS max_created_at_date,
-        
+    
+		-- RFM TEST GROUPS
         MIN(CASE WHEN rfm.created_at_date = @min_created_at_date THEN rfm.test_group ELSE NULL END) AS test_group_at_min_date,
+    
+		-- RFM SCORE METRICS
+		MIN(CASE WHEN rfm.created_at_date = @min_created_at_date THEN rfm.booking_most_recent_return_vs_now ELSE NULL END) AS booking_most_recent_return_vs_now,
+		MIN(CASE WHEN rfm.created_at_date = @min_created_at_date THEN rfm.total_days_per_completed_and_started_bookings ELSE NULL END) AS total_days_per_completed_and_started_bookings,
+		MIN(CASE WHEN rfm.created_at_date = @min_created_at_date THEN rfm.booking_charge__less_discount_aed_per_completed_started_bookings ELSE NULL END) AS booking_charge__less_discount_aed_per_completed_started_bookings,
         
         -- SCORE THREE PART COMPARISON
         MAX(CASE WHEN rfm.created_at_date = @min_created_at_date THEN rfm.score_three_parts ELSE 0 END) AS score_three_parts_as_of_initial_date,
@@ -97,7 +104,7 @@ FROM (
         AND rfm.created_at_date = @min_created_at_date
         AND b.booking_date >= @min_created_at_date_formatted
         AND b.status NOT IN ('Cancelled by User')
-    GROUP BY rfm.user_ptr_id, rfm.date_join_cohort, rfm.is_repeat_new_first, rfm.all_cities_distinct, rfm.all_countries_distinct, rfm.booking_count_total, rfm.booking_count_cancel, rfm.booking_count_completed, rfm.booking_count_started, rfm.booking_count_future, rfm.booking_count_other, rfm.is_currently_started, b.booking_id, b.status, b.booking_type, b.deliver_method, b.car_cat_name, b.marketplace_or_dispatch, b.promo_code, b.has_promo_code, b.booking_date, b.pickup_date, b.return_date, b.booking_charge_less_discount
+    GROUP BY rfm.user_ptr_id, rfm.date_join_cohort, rfm.is_repeat_new_first, rfm.all_cities_distinct, rfm.all_countries_distinct, rfm.booking_count_total, rfm.booking_count_cancel, rfm.booking_count_completed, rfm.booking_count_started, rfm.booking_count_future, rfm.booking_count_other, rfm.is_currently_started, b.booking_id, b.status, b.booking_type, b.deliver_method, b.car_cat_name, b.marketplace_or_dispatch, b.promo_code, has_promo_code, b.booking_date, b.pickup_date, b.return_date, b.booking_charge_less_discount
 ) AS a;
 
 SELECT * FROM rfm_score_summary_history_data_tracking_most_recent;
