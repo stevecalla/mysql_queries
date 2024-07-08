@@ -12,6 +12,8 @@ CREATE TABLE rfm_score_recency_data
         email,
         mobile,
         telephone,
+        first_name,
+        last_name,
         
         -- COUNTRY / CITY
         all_countries_distinct,
