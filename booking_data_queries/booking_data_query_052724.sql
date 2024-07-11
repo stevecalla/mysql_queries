@@ -1,6 +1,6 @@
 USE myproject;
 
-SET @str_date = '2024-01-01', @end_date = '2024-01-01';
+SET @str_date = '2024-06-01', @end_date = '2024-06-30';
 
 -- ********* START ************ CHANGE LOG
 -- 5/21/24 adjust for early return  
@@ -461,7 +461,7 @@ FROM
                 FROM
                     myproject.rental_car_booking2 bb
                 WHERE
-                    bb.owner_id = b.owner_id
+                    bb.owner_id = b.owner_id(SELECT 
                         AND bb.status NOT IN (8 , 9)), 0) AS no_of_started_bookings,
             b.owner_id AS customer_id,
             au.first_name AS first_name,
@@ -539,7 +539,10 @@ FROM
                             myproject.rental_early_return_charges as erc
                         WHERE
                             erc.booking_id = b.id
-                                AND erc.charge_type_id IN (4)), 0)
+                                AND erc.charge_type_id IN (4)
+                        -- ****************************
+                        LIMIT 1), 0) -- FIX 07/03/24 #57
+                        -- ****************************
             END AS customer_rate, -- in local currency
 
             -- adjusted for early return

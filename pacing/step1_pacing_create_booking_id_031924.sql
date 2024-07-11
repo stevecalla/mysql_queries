@@ -30,6 +30,7 @@ ORDER BY booking_date ASC, pickup_date ASC;
 
 -- Select all records with a limit of 10
 SELECT * FROM pacing_base;
+SELECT * FROM pacing_base WHERE extension_charge_aed < 0;
 
 -- BY WEEK CALCS
 -- DATE_ADD(booking_date, INTERVAL (IF(DAYOFWEEK(booking_date) = 1, -6, 2 - DAYOFWEEK(booking_date))) DAY) AS booking_first_day_of_week,

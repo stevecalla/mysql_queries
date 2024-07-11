@@ -9,6 +9,11 @@ CREATE TABLE rfm_score_recency_data
     SELECT 
         user_ptr_id,
         date_join_cohort,
+        email,
+        mobile,
+        telephone,
+        first_name,
+        last_name,
         
         -- COUNTRY / CITY
         all_countries_distinct,
@@ -72,7 +77,8 @@ CREATE TABLE rfm_score_recency_data
             -- AND all_countries_distinct LIKE 'United Arab Emirates' -- 80,105 only UAE (not UAE and other countries)
     ORDER BY rfm_recency_metric DESC, booking_most_recent_return_date ASC;
 
--- -- CREATE FREQUENY RANKING BASE
+
+-- CREATE FREQUENY RANKING BASE
 DROP TABLE IF EXISTS rfm_score_frequency_data;
 CREATE TABLE rfm_score_frequency_data
     SELECT 
@@ -125,7 +131,8 @@ CREATE TABLE rfm_score_frequency_data
             -- AND all_countries_distinct LIKE 'United Arab Emirates' -- 80,105 only UAE (not UAE and other countries)
     ORDER BY rfm_frequency_metric, booking_most_recent_return_date ASC;
 
--- -- CREATE MONETARY RANKING BASE
+
+-- CREATE MONETARY RANKING BASE
 DROP TABLE IF EXISTS rfm_score_monetary_data;
 CREATE TABLE rfm_score_monetary_data
     SELECT 
@@ -183,6 +190,7 @@ SELECT * FROM rfm_score_recency_data ORDER BY booking_most_recent_return_vs_now 
 SELECT * FROM rfm_score_frequency_data;      
 SELECT * FROM rfm_score_monetary_data;
 
+-- CREATE RFM SUMMARY SCORE DATA
 DROP TABLE IF EXISTS rfm_score_summary_data;
 CREATE TABLE rfm_score_summary_data
     SELECT
@@ -237,7 +245,9 @@ CREATE TABLE rfm_score_summary_data
             PARTITION BY m.monetary_score_five_parts 
             ORDER BY m.booking_charge__less_discount_aed_per_completed_started_bookings DESC
             ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
-        ) AS five_parts_last_monetary_amount
+        ) AS five_parts_last_monetary_amount,
+
+        CASE WHEN RAND() < 0.2 THEN 'Control' ELSE 'Experiment' END AS test_group
 
         -- -- FIRST & LAST VALUE - CUSTOM PARTS
         -- CONCAT(r.recency_score_custom_parts, f.frequency_score_custom_parts, m.monetary_score_custom_parts) AS score_custom_parts,

@@ -1,4 +1,3 @@
-
 USE ezhire_pacing_metrics;
 -- Select all records with a limit of 10
 SELECT * FROM pacing_base;

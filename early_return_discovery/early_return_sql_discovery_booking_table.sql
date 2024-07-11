@@ -1,9 +1,8 @@
 -- discovery to join rental_car_booking2 and early return table / data
 USE myproject;
-
+--																					06/24/24
 -- STEP #1:     DONE == FIND EARLY RETURN FLAG = early_return
--- STEP #2:     DONE == EARLY RETURN DISTINCT FIELDS; result is 0 NOT EARLY RETURN & 1 EARLY RETURN
--- STEP #3:     DONE == COUNT OF EARLY RETURN; total = 274,430; 0 NOT EARLY RETURN = 260,148, 1 IS EARLY RETURN = 14,282
+-- STEP #2:     DONE == COUNT OF EARLY RETURN; 										285,022, NOT EARLY RETURN = 269,981, 1 IS EARLY RETURN = 15,041
 -- STEP #4:     DONE == GET A SAMPLE OF EARLY RETURNS
 -- STEP #4A:    DONE == DON'T USE THE rental_end_date_string; DOESN'T LOOK ACCURATE
 -- STEP #5:     DONE == JOIN BOOKING TABLE WITH EARLY RETURN TABLE
@@ -14,7 +13,7 @@ USE myproject;
 -- STEP #1
 SHOW COLUMNS FROM rental_car_booking2;
 
--- STEP #2 & #3
+-- STEP #2
 SELECT DISTINCT(early_return), COUNT(*) FROM rental_car_booking2 GROUP BY early_return WITH ROLLUP LIMIT 10;
 
 -- STEP #4: GET A SAMPLE OF EARLY RETURNS
@@ -47,12 +46,11 @@ FROM rental_car_booking2 AS b
 	-- LEFT JOIN (SELECT MAX(booking_id), booking_id, old_return_date, new_return_date, new_return_time FROM rental_early_return_bookings AS er GROUP BY booking_id) er ON er.booking_id = b.id -- RETURNS MOST RECENT RECORD FOR EACH booking_id
 
     LEFT JOIN rental_early_return_bookings AS er ON er.booking_id = b.id AND er.is_active = 1 -- RETURNS MOST RECENT DATE RECORDS FOR EACH booking_id using is_active flag 1
-
 WHERE 
-	-- b.early_return = 1
+	b.early_return = 1
     -- AND
     -- b.id IN ('225443', '210299', '30174', '240667')
-    b.id IN ('210299', '30174', '240667')
+    -- b.id IN ('210299', '30174', '240667')
 ORDER BY STR_TO_DATE(b.return_date_string, '%d/%m/%Y') DESC;
 -- LIMIT 10;
 
@@ -68,8 +66,6 @@ SELECT
 FROM rental_car_booking2 AS b
     LEFT JOIN rental_status AS rs ON rs.id = b.status
 	LEFT JOIN (SELECT MAX(booking_id), booking_id, old_return_date, new_return_date, new_return_time FROM rental_early_return_bookings AS er GROUP BY booking_id) er ON er.booking_id = b.id -- RETURNS MOST RECENT RECORD FOR EACH booking_id
-
-
 WHERE b.early_return = 0
     AND b.status <> 8
 ORDER BY STR_TO_DATE(b.return_date_string, '%d/%m/%Y') DESC
@@ -77,7 +73,7 @@ LIMIT 10;
 
 -- STEP #8: CALCULATE EARLY RETURN EXTENSION DAYS
 -- a) SUBTRACT NEW RETURN DATE FROM OLD RETURN DAY
--- b) SUBTRACT RESULT OF ABOVE FROM OLD EXTENSION DAYS
+-- b) SUBTRACT RESULT OF ABOVE a) FROM OLD EXTENSION DAYS
 SELECT 
     b.id,
     er.new_return_date,

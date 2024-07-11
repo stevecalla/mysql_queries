@@ -1,11 +1,11 @@
 -- rental_early_return_bookings discovery
 USE myproject;
-
--- STEP #1: DONE == REVIEW EARLY RETURN TABLE; RECORDS 16,889
--- STEP #2: DONE == SUMMARIZE DUPLICATE RECORDS; RECORDS 1,150 HAVE MORE THAN 1 RECORD
--- STEP #3: DONE == REVIEW DUPLIATE RECORDS DETAIL; TOTAL RECORDS WITHOUT GROUPING IS 2,486
--- STEP #4: DONE == ONLY RETURN THE MOST RECENT EARLY RETURN RECORD; RECORDS 15,552
--- STEP #5: DONE == JOIN THE EARLY RETURN & BOOKING TABLE
+--                                                                      early June      06/24/24
+-- STEP #1: DONE == REVIEW EARLY RETURN TABLE                           16,889          17,653
+-- STEP #2: DONE == SUMMARIZE MULTIPLE RECORDS                          1,150           1,154
+-- STEP #3: DONE == REVIEW MULTIPLE RECORDS DETAIL                      2,486           2,494
+-- STEP #4: DONE == ONLY RETURN THE MOST RECENT EARLY RETURN RECORD     15,552          16,312
+-- STEP #5: DONE == JOIN THE EARLY RETURN & BOOKING TABLE                               15,044
 
 -- STEP #1
 SELECT * FROM rental_early_return_bookings;
@@ -37,10 +37,10 @@ SELECT
     booking_id, 
     MAX(date_created) AS most_recent_created_on
 FROM rental_early_return_bookings
-WHERE 
+-- WHERE 
     -- booking_id IN ('225443', '210299', '30174')
     -- booking_id IN ('240709', '240727', '240755') -- extension days & early return
-    booking_id IN ('240727') -- extension days & early return
+    -- booking_id IN ('240727') -- extension days & early return
 GROUP BY booking_id
 ORDER BY booking_id;
 
@@ -62,11 +62,11 @@ FROM rental_car_booking2 AS b
 
     LEFT JOIN rental_early_return_bookings AS er ON er.booking_id = b.id AND er.is_active = 1 -- RETURNS MOST RECENT DATE RECORDS FOR EACH booking_id using is_active flag 1
 WHERE 
-	-- early_return = 1 -- CAN'T USE AS FILTER BECAUSE SOME BOOKINGS (SUCH AS 30174) NOT CODED AS EARLY RETURN = 1
+	early_return = 1 -- THIS IT THE KEY FILTER; IF BOOKING EXISTS IN EARLY RETURN TABLE BUT NOT CODED AS 1 THEN NOT EARLY RETURN (SUCH AS 30174) 
 	-- AND
-    -- b.id IN ('30174') -- NOT CODE IN rental_car_bookingv2 as early_return;
+    -- b.id IN ('30174') -- NO CODE IN rental_car_bookingv2 as early_return; ignore if no early return flag
     -- b.id IN ('225443', '210299', '30174')
-    b.id IN ('240709', '240727', '240755') -- extension days & ealry return
+    -- b.id IN ('240709', '240727', '240755') -- extension days & early return
 ORDER BY STR_TO_DATE(b.return_date_string, '%d/%m/%Y') DESC;
 -- LIMIT 10;
 
