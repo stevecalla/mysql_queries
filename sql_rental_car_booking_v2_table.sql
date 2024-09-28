@@ -1,0 +1,1 @@
+Select b.city_id, b.* from myproject.rental_car_booking2 b limit 10;

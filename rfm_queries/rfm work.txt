@@ -1,0 +1,42 @@
+rfm work
+  -- DONE = recency dates only for non-cancelled bookings?
+  -- DONE = check monetary to ensure cancels are not included
+  -- DONE = other rfm_recency_metric < 0 but not in started status; will exclude by filtering out started or rfm < 0
+  -- DONE adjust metric and score to excluded cancelled bookings?
+  -- DONE = if most recent booking date = null then recency = null; same for frequency & monetary value
+  -- DONE = adjust repeat/new/first et al based on only complete bookings
+	-- adjust repeat rule... repeat if completed count >= 2 (not total booking count)
+  	-- adjust 1-timer rule.. if completed count = 1 (not total bookings)
+  	-- looker = total booking count = 0
+  	-- other category?
+  -- DONE = add first & last value for each score
+  -- DONE = rfm summary - add # of bookings
+  -- DONE = exclude booking future and booking other
+  -- DONE = adjust when booking join date > booking_date/created on
+  -- DONE customer waterfall in waterfall?
+  -- DONE create histogram / descriptive stats
+  -- DONE = need country / city dimension
+
+rfm - renters
+ 1 = HAS RENTED = is_renter = yes (is_renter = 'Repeat', 'First', 'New')
+ 2 = NOT STARTED = is_currently_started = no
+ 3 = ELIMINATE FUTURE BOOKINGS USERS = booking count future = 0
+ 4 = ELIMINATE BOOKINGS IN OTHER STATUS = booking count other = 0
+ 5 = HAS A VALID BOOKING DATE = booking_most_recent_return_date IS NOT NULL = confirms a return date exists
+ 6 = MOST RECENT BOOKING VS NOW > 0 = booking_most_recent_return_vs_now >= 0 (ensures no negative values; return dates in the future)
+ 7 = ELIMINATE NEGATIVE BOOKING VALUES = booking_charge__less_discount_aed_per_completed_started_bookings >= 0
+ 8 = total_days_per_completed_and_started_bookings >= 0 (same as 6)
+ 9 = UAE RENTAL COMPLETED ONLY = distinguish by country / city
+
+---------------WATERFALL-----------------
+WHERE 
+    is_renter = "yes" 									-- 95,129 row(s) 	IN ('repeat', 'first', 'new')
+        AND is_currently_started LIKE "no" 						-- 92,200 row(s)
+        AND booking_count_future = 0 
+        AND booking_count_other = 0 							-- 91,989 row(s)
+        AND booking_most_recent_return_date IS NOT NULL 				-- 91,984 row(s)
+        AND rfm_recency_metric >= 0 							-- 91,950 row(s)
+        AND booking_charge__less_discount_aed_per_completed_started_bookings >= 0 	-- 91,813 row(s)
+        AND total_days_per_completed_and_started_bookings >= 0 				-- 91,813 		(AND rfm_recency_metric >= 0)	
+        AND all_countries_distinct LIKE '%United Arab Emirates%' 			-- 80,487 		UAE combined with other countries
+        -- AND all_countries_distinct LIKE 'United Arab Emirates' 			-- 80,105 		only UAE (not UAE and other countries)

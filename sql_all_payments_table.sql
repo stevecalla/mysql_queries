@@ -1,0 +1,1 @@
+SELECT * FROM myproject.all_payments_all LIMIT 1;
