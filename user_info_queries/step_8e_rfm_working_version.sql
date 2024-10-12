@@ -139,6 +139,12 @@ SELECT
     rfm.is_repeat_new_first,
     rfm.all_cities_distinct,
     rfm.all_countries_distinct, 
+
+    rfm.all_promo_codes_distinct,
+    rfm.promo_code_on_most_recent_booking,
+    rfm.used_promo_code_last_14_days_flag,
+    rfm.used_promo_code_on_every_booking,
+    
     rfm.booking_count_total,
     rfm.booking_count_cancel,
     rfm.booking_count_completed,
