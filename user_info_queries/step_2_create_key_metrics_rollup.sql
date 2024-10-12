@@ -5,19 +5,20 @@ DROP TABLE IF EXISTS user_data_key_metrics_rollup;
 
 -- Create indexes to improve query performance on user_ptr_id, status, and return_date columns
 -- Indexes help speed up lookups and join operations involving these columns
-DROP INDEX idx_user_ptr_id_status ON ezhire_user_data.user_data_combined_booking_data;
-DROP INDEX idx_user_ptr_id_return_date ON ezhire_user_data.user_data_combined_booking_data;
-DROP INDEX idx_user_ptr_id_dates ON ezhire_user_data.user_data_combined_booking_data;-- Drop index if it exists, to avoid errors if the index does not exist
+-- DROP INDEX idx_user_ptr_id_status ON ezhire_user_data.user_data_combined_booking_data;
+-- DROP INDEX idx_user_ptr_id_return_date ON ezhire_user_data.user_data_combined_booking_data;
+-- DROP INDEX idx_user_ptr_id_dates ON ezhire_user_data.user_data_combined_booking_data;-- Drop index if it exists, to avoid errors if the index does not exist
 
-CREATE INDEX idx_user_ptr_id_dates ON ezhire_user_data.user_data_combined_booking_data (user_ptr_id, booking_date, pickup_date, return_date);
-CREATE INDEX idx_user_ptr_id_status ON ezhire_user_data.user_data_combined_booking_data (user_ptr_id, status);
-CREATE INDEX idx_user_ptr_id_return_date ON ezhire_user_data.user_data_combined_booking_data (user_ptr_id, return_date);
+-- CREATE INDEX idx_user_ptr_id_dates ON ezhire_user_data.user_data_combined_booking_data (user_ptr_id, booking_date, pickup_date, return_date);
+-- CREATE INDEX idx_user_ptr_id_status ON ezhire_user_data.user_data_combined_booking_data (user_ptr_id, status);
+-- CREATE INDEX idx_user_ptr_id_return_date ON ezhire_user_data.user_data_combined_booking_data (user_ptr_id, return_date);
 
-CREATE TABLE user_data_key_metrics_rollup AS
+CREATE TABLE user_data_key_metrics_rollup AS -- todo:
 	SELECT 
 		user_ptr_id,
-		-- booking_id, -- to see the detail for each booking_id,
-		-- status, -- to see the detail for each booking_id,
+		-- booking_id, -- to see the detail for each booking_id, -- TODO:
+		-- status, -- to see the detail for each booking_id, -		
+		-- promo_code, -- TODO:
 
 		-- COUNTRY & CITY STATS
 		--  GROUP_CONCAT(DISTINCT deliver_country ORDER BY deliver_country ASC SEPARATOR ', ') AS all_countries_distinct,
@@ -25,20 +26,81 @@ CREATE TABLE user_data_key_metrics_rollup AS
 		GROUP_CONCAT(DISTINCT CASE WHEN status NOT LIKE '%cancelled%' THEN deliver_country END ORDER BY deliver_country ASC SEPARATOR ', ') AS all_countries_distinct,
 		GROUP_CONCAT(DISTINCT CASE WHEN status NOT LIKE '%cancelled%' THEN deliver_city END ORDER BY deliver_city ASC SEPARATOR ', ') AS all_cities_distinct,
 
+		-- PROMO CODE STATS -- TODO:
+		-- (a) list of a promo codes
+		GROUP_CONCAT(DISTINCT CASE WHEN status NOT LIKE '%cancelled%' THEN promo_code END ORDER BY booking_date ASC SEPARATOR ', ') AS all_promo_codes_distinct,
+		-- (b) most recent booking promo code; if a no promo code on last booking it will be blank
+		-- (b.1) if used a promo code on last rental... code below also covers this as it will be blank if promo not used on most recent booking
+		(
+			SELECT 
+				inner_data.promo_code
+			FROM 
+				ezhire_user_data.user_data_combined_booking_data AS inner_data
+			WHERE 
+				inner_data.user_ptr_id = user_data_combined_booking_data.user_ptr_id
+				AND inner_data.return_date = 
+				(
+					SELECT 
+						MAX(inner_data2.return_date)
+					FROM ezhire_user_data.user_data_combined_booking_data AS inner_data2
+					WHERE 
+						inner_data2.user_ptr_id = inner_data.user_ptr_id
+						AND inner_data2.status NOT IN ('Cancelled by User')
+				)
+				AND inner_data.status NOT IN ('Cancelled by User')
+			ORDER BY inner_data.return_date DESC
+			LIMIT 1
+		) AS promo_code_on_most_recent_booking,
+
+		-- (c) used a promo code in the last 14 days
+		(
+			SELECT 
+				CASE 
+					WHEN MAX(inner_data.return_date) >= (CURDATE() - INTERVAL 14 DAY) THEN 'Yes' 
+					ELSE 'No' 
+				END AS used_promo_code_last_14_days_flag
+			FROM 
+				ezhire_user_data.user_data_combined_booking_data AS inner_data
+			WHERE 
+				inner_data.user_ptr_id = user_data_combined_booking_data.user_ptr_id
+				AND inner_data.status NOT IN ('Cancelled by User')
+			LIMIT 1
+		) AS used_promo_code_last_14_days_flag,
+
+		-- (d) only used a promo code, 
+		(
+			SELECT 
+				CASE 
+					WHEN COUNT(inner_data.promo_code) = 0 THEN 'No' 
+					WHEN COUNT(inner_data.promo_code) = COUNT(*) THEN 'Yes' 
+					ELSE 'No' 
+				END AS used_promo_code_on_every_booking
+			FROM 
+				ezhire_user_data.user_data_combined_booking_data AS inner_data
+			WHERE 
+				inner_data.user_ptr_id = user_data_combined_booking_data.user_ptr_id
+				AND inner_data.status NOT IN ('Cancelled by User')
+		) AS used_promo_code_on_every_booking,
+
 		-- BOOKING TYPE
-			--  GROUP_CONCAT(DISTINCT booking_type ORDER BY booking_type ASC SEPARATOR ', ') AS booking_type_all_distinct,
-			GROUP_CONCAT(DISTINCT CASE WHEN status NOT LIKE '%cancelled%' THEN booking_type END ORDER BY booking_type ASC SEPARATOR ', ') AS booking_type_all_distinct,
-		(SELECT booking_type
-		FROM ezhire_user_data.user_data_combined_booking_data AS inner_data
-		WHERE inner_data.user_ptr_id = user_data_combined_booking_data.user_ptr_id
-		AND inner_data.return_date = (
-			SELECT MAX(return_date)
-			FROM ezhire_user_data.user_data_combined_booking_data AS inner_data2
-			WHERE inner_data2.user_ptr_id = inner_data.user_ptr_id
-				AND inner_data2.status NOT IN ('Cancelled by User')
-		)
-		AND inner_data.status NOT IN ('Cancelled by User')
-		LIMIT 1) AS booking_type_most_recent,
+		--  GROUP_CONCAT(DISTINCT booking_type ORDER BY booking_type ASC SEPARATOR ', ') AS booking_type_all_distinct,
+		GROUP_CONCAT(DISTINCT CASE WHEN status NOT LIKE '%cancelled%' THEN booking_type END ORDER BY booking_type ASC SEPARATOR ', ') AS booking_type_all_distinct,
+		(
+			SELECT 
+				booking_type
+			FROM ezhire_user_data.user_data_combined_booking_data AS inner_data
+			WHERE inner_data.user_ptr_id = user_data_combined_booking_data.user_ptr_id
+			AND inner_data.return_date = 
+				(
+					SELECT 
+						MAX(return_date)
+					FROM ezhire_user_data.user_data_combined_booking_data AS inner_data2
+					WHERE inner_data2.user_ptr_id = inner_data.user_ptr_id
+					AND inner_data2.status NOT IN ('Cancelled by User')
+				)
+			AND inner_data.status NOT IN ('Cancelled by User')
+			LIMIT 1
+		) AS booking_type_most_recent,
 
 		-- CANCELLER, REPEAT, NEW, FIRST
 		CASE
@@ -145,13 +207,15 @@ CREATE TABLE user_data_key_metrics_rollup AS
 		-- user_ptr_id IN ('11022')			-- recency score -196586, most recent return date '2562-08-10' & rental cancelled
 		-- user_ptr_id IN ('196066') -- date join is greater than first booking date
 
-	-- WHERE
-	-- 	user_ptr_id IN ('1580')
-	-- 	user_ptr_id IN ('549331') 		-- currently started renter; first created 1/4/2024, 
-		-- 									most recent created on 2/23/24, most recent pickup 2/24/24, 
-		-- 									most recent return 5/18/2024, most recent status rental started
-		-- user_ptr_id IN ('519820') 			-- recency score -81? returned early but return date not 
-												-- adjusted?
+	-- WHERE -- TODO:
+		-- user_ptr_id IN ('1580')
+		-- user_ptr_id IN ('549331') 		-- currently started renter; first created 1/4/2024, 
+											-- most recent created on 2/23/24, most recent pickup 2/24/24, 
+											-- most recent return 5/18/2024, most recent status rental started
+		-- user_ptr_id IN ('519820') 			-- recency score -81? returned early but return date not adjusted?
+		-- booking_id IN ('321138', '321235')			-- has recent promo code FREEDAY
+		-- user_ptr_id IN (5, 8, 40, 518888, 518876) -- various promo code scenarios
+
 		-- AND
 		-- status LIKE 'Rental Ended'
 		-- status NOT LIKE '%started%'
@@ -159,14 +223,15 @@ CREATE TABLE user_data_key_metrics_rollup AS
 		-- AND
 		-- return_date > UTC_TIMESTAMP()
 		-- IFNULL(TIMESTAMPDIFF(DAY, DATE_FORMAT(MAX(CASE WHEN status NOT LIKE '%cancelled%' THEN return_date ELSE NULL END), '%Y-%m-%d'), DATE_FORMAT(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), '%Y-%m-%d')), '') < 0
-	-- GROUP BY 1, 2, 3
-	-- ORDER BY 1, 2;
+	-- GROUP BY 1, 2, 3, 4 -- TODO:
+	-- ORDER BY 1, 2 -- TODO:
 
 	-- TO GET ROLLUP FOR ALL USERS
-	GROUP BY 1
-	ORDER BY 1;	
+	GROUP BY 1 -- TODO:
+	ORDER BY 1	-- TODO:
 	-- ORDER BY 1
-	-- LIMIT 100;
+	-- LIMIT 100
+	;
 
 -- QUERY ENTIRE user_and_booking_data DB
 SELECT * FROM user_data_key_metrics_rollup;

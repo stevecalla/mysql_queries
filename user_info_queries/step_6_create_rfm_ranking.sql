@@ -19,6 +19,12 @@ CREATE TABLE rfm_score_recency_data
         -- COUNTRY / CITY
         all_countries_distinct,
         all_cities_distinct,
+        
+        -- PROMO CODE STATUS -- TODO: NEW
+		all_promo_codes_distinct,
+		promo_code_on_most_recent_booking,
+		used_promo_code_last_14_days_flag,
+		used_promo_code_on_every_booking,
 
 		-- BOOKING TYPE
 		booking_type_all_distinct, 

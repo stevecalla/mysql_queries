@@ -1,6 +1,6 @@
 USE myproject;
 
-SET @str_date = '2024-01-01', @end_date = '2024-01-01';
+SET @str_date = '2024-10-01', @end_date = '2024-10-31';
 
 -- ********* START ************ CHANGE LOG
     -- CUSTOMER RATE = 0, EARLY RETURN = 1
@@ -1577,19 +1577,25 @@ FROM
 	-- FOR USE IN MYSQL WITH VARIABLES IN LINE 1
 	WHERE 
         DATE(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) BETWEEN @str_date AND @end_date
-		AND COALESCE(b.vendor_id,'') NOT IN (5, 33, 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
-		AND (LOWER(au.first_name) NOT LIKE '%test%' AND LOWER(au.last_name) NOT LIKE '%test%' AND LOWER(au.username) NOT LIKE '%test%' AND LOWER(au.email) NOT LIKE '%test%')
+        -- LOGIC TO EXCLUDE TEST BOOKINGS
+		-- AND COALESCE(b.vendor_id,'') NOT IN (5, 33, 218, 23086) 
+		-- AND (LOWER(au.first_name) NOT LIKE '%test%' 
+        -- AND LOWER(au.last_name) NOT LIKE '%test%' 
+        -- AND LOWER(au.username) NOT LIKE '%test%' 
+        -- AND LOWER(au.email) NOT LIKE '%test%')
 
-    -- LOGIC TO EXCLUDE TEST BOOKINGS        
-        LOWER(auth_user.first_name) NOT LIKE '%test%'
-        AND LOWER(auth_user.last_name) NOT LIKE '%test%'
-        AND LOWER(auth_user.username) NOT LIKE '%test%'
-        AND LOWER(auth_user.email) NOT LIKE '%test%'
-        AND auth_user.last_name NOT LIKE 'N'
-        AND auth_user.email NOT LIKE 'abc@gmail.com'
-        AND LOWER(auth_user.first_name) not LIKE '%ezhire%' 
-        AND LOWER(auth_user.last_name) not like '%ezhire%' 
-        AND LOWER(auth_user.email) not like '%ezhire%'
+        -- LOGIC EXCLUDE TEST USERS FROM auth_user
+        -- REVISED ABOVE TO BELOW ON 10/11/24
+        AND COALESCE(b.vendor_id,'') NOT IN (5, 33, 218, 23086)    
+        AND LOWER(au.first_name) NOT LIKE '%test%'
+        AND LOWER(au.last_name) NOT LIKE '%test%'
+        AND LOWER(au.username) NOT LIKE '%test%'
+        AND LOWER(au.email) NOT LIKE '%test%'
+        AND au.last_name NOT LIKE 'N'
+        AND au.email NOT LIKE 'abc@gmail.com'
+        AND LOWER(au.first_name) not LIKE '%ezhire%' 
+        AND LOWER(au.last_name) not like '%ezhire%' 
+        AND LOWER(au.email) not like '%ezhire%'
 
     -- TBD
     -- WHERE b.id IN ('51859', '75241', '271272')
@@ -1641,9 +1647,27 @@ FROM
 	-- FOR TESTING / AUDITING ******* END *********
 	
 	-- FOR USE IN NODE / JAVASCRIPT AS SQL SET VARIABLES DON'T WORK ******* START *********
-	-- WHERE date(date_add(b.created_on,interval 4 hour)) between 'startDateVariable' and 'endDateVariable'
-    --     AND COALESCE(b.vendor_id,'') NOT IN (33, 5 , 218, 23086) -- LOGIC TO EXCLUDE TEST BOOKINGS
-	-- 	AND (LOWER(au.first_name) NOT LIKE '%test%' AND LOWER(au.last_name) NOT LIKE '%test%' AND LOWER(au.username) NOT LIKE '%test%' AND LOWER(au.email) NOT LIKE '%test%')
+	    -- WHERE 
+            -- date(date_add(b.created_on,interval 4 hour)) between 'startDateVariable' and 'endDateVariable'
+            -- LOGIC TO EXCLUDE TEST BOOKINGS
+            -- AND COALESCE(b.vendor_id,'') NOT IN (33, 5 , 218, 23086) 
+		    -- AND (LOWER(au.first_name) NOT LIKE '%test%' 
+            -- AND LOWER(au.last_name) NOT LIKE '%test%' 
+            -- AND LOWER(au.username) NOT LIKE '%test%' 
+            -- AND LOWER(au.email) NOT LIKE '%test%')
+
+            -- LOGIC EXCLUDE TEST USERS FROM auth_user
+            -- REVISED ABOVE TO BELOW ON 10/11/24
+            -- AND COALESCE(b.vendor_id,'') NOT IN (5, 33, 218, 23086)    
+            -- AND LOWER(au.first_name) NOT LIKE '%test%'
+            -- AND LOWER(au.last_name) NOT LIKE '%test%'
+            -- AND LOWER(au.username) NOT LIKE '%test%'
+            -- AND LOWER(au.email) NOT LIKE '%test%'
+            -- AND au.last_name NOT LIKE 'N'
+            -- AND au.email NOT LIKE 'abc@gmail.com'
+            -- AND LOWER(au.first_name) not LIKE '%ezhire%' 
+            -- AND LOWER(au.last_name) not like '%ezhire%' 
+            -- AND LOWER(au.email) not like '%ezhire%'
 	-- FOR USE IN NODE / JAVASCRIPT AS SQL VARIABLES DON'T WORK ******* END *********
 
     ORDER BY b.id
