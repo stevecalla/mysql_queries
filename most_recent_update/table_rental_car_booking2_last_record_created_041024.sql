@@ -40,7 +40,6 @@ ORDER BY date_joined DESC
 LIMIT 1;
 
 -- FINDS DISTINCT CREATED ON INFO AND USEFUL TO SEE FREQUENCY OF UPDATED ADDED
--- title: WP Named Partnerships
 --  DISTINCT(created_on), COUNT(*) FROM myproject.rental_car_booking2 GROUP BY created_on ORDER BY created_on DESC LIMIT 100;
 
 -- FINDS DISTINCT UPDATED ON INFO AND USEFUL TO SEE FREQUENCY OF UPDATED ADDED
@@ -86,29 +85,37 @@ SELECT
         ELSE "false"
     END AS is_within_2_hours
 FROM (
-    (SELECT created_on AS last_updated, id, 'rental_car_booking2_created_on' as source_field, COUNT(*) as count
-		FROM myproject.rental_car_booking2
-		GROUP BY created_on
-		ORDER BY created_on DESC
-		LIMIT 1)
+    (
+      SELECT created_on AS last_updated, id, 'rental_car_booking2_created_on' as source_field, COUNT(*) as count
+      FROM myproject.rental_car_booking2
+      GROUP BY created_on
+      ORDER BY created_on DESC
+      LIMIT 1
+    )
     UNION ALL
-    (SELECT updated_on AS last_updated, id, 'rental_car_booking2_updated_on' as source_field, COUNT(*) as count
-		FROM myproject.rental_car_booking2
-		GROUP BY updated_on
-		ORDER BY updated_on DESC
-		LIMIT 1)
+    (
+      SELECT updated_on AS last_updated, id, 'rental_car_booking2_updated_on' as source_field, COUNT(*) as count
+      FROM myproject.rental_car_booking2
+      GROUP BY updated_on
+      ORDER BY updated_on DESC
+      LIMIT 1
+    )
     UNION ALL
-    (SELECT date_join, user_ptr_id AS id, 'rental_fuser_join' as source_field, COUNT(*)
-		FROM myproject.rental_fuser
-		GROUP BY date_join
-		ORDER BY date_join DESC
-		LIMIT 1)
+    (
+      SELECT date_join, user_ptr_id AS id, 'rental_fuser_join' as source_field, COUNT(*)
+      FROM myproject.rental_fuser
+      GROUP BY date_join
+      ORDER BY date_join DESC
+      LIMIT 1
+    )
     UNION ALL
-    (SELECT date_joined, id, 'auth_user_joined' as source_field, COUNT(*)
-		FROM myproject.auth_user
-		GROUP BY date_joined
-		ORDER BY date_joined DESC
-		LIMIT 1)
+    (
+      SELECT date_joined, id, 'auth_user_joined' as source_field, COUNT(*)
+      FROM myproject.auth_user
+      GROUP BY date_joined
+      ORDER BY date_joined DESC
+      LIMIT 1
+    )
 ) AS last_updated_table
 ORDER BY source_field DESC, last_updated DESC
 LIMIT 10;
