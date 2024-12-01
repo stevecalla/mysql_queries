@@ -10,6 +10,7 @@ WITH recency_binned_data AS (
         NTILE(@bin_count) OVER (ORDER BY booking_most_recent_return_vs_now) AS bin_number
     FROM rfm_score_recency_data
 )
+
 SELECT
     bin_number,
     MIN(booking_most_recent_return_vs_now) AS min,

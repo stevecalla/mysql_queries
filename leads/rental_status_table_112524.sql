@@ -1,0 +1,1 @@
+SELECT * FROM ezhire_crm.rental_status;
