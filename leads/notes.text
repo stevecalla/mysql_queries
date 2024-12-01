@@ -1,0 +1,66 @@
+
+********************************************
+ISSUES 11/25/24
+a - Simple Match of SQL vs ERP Conversion Report: When I run query #1 in this thread, I can't get the booking figures to reconcile. I'm specifically looking at 11/24/24 but applies to other dates.
+
+b - Possible Duplicate Counts: I noticed what might be duplicate count of booking ids. https://ezhire.slack.com/archives/C074W860DTJ/p1732504680886549
+
+c - Response Time: When I run response time reports, I can't get it to reconcile against ERP Lead Aswat Calls Report. See query #2 in this thread. (edited) 
+***********************************
+
+STORED PROCEDURES
+1 - Lead Response time
+    SP_get_lead_aswat_call_logs
+
+2 - Conversion report
+    SP_get_Source_Wise_Leads
+
+3 - Conversion report booking wise
+    SP_getConversionReportBookingWise
+
+***************************************************
+
+AND (lm.lead_status_id NOT IN (12,13,14) 
+
+OR (COALESCE(bm.promo_code, '') NOT IN (SELECT promo_code FROM conversion_excluded_promo_codes WHERE is_active = 1) 
+OR COALESCE(bm.promo_code, '') = '' 
+
+OR TIMESTAMPDIFF(DAY, lm.created_on, bm.booking_created_on) <= 7)) 
+
+***************************************************
+QUERIES
+# For Getting Lead Response Time
+SELECT 
+    lead_master_id, 
+    MIN(created_on) AS created_on,
+    MIN(updated_on) AS first_updated_on,
+    CONCAT(FLOOR(TIMESTAMPDIFF(MINUTE, MIN(created_on), MIN(updated_on)) / 60), ':',
+           LPAD(MOD(TIMESTAMPDIFF(MINUTE, MIN(created_on), MIN(updated_on)), 60), 2, '0')) AS response_time
+FROM leads_master_log
+WHERE DATE(created_on)=DATE(NOW())
+    AND updated_on IS NOT NULL
+GROUP BY lead_master_id;
+
+# For Conversion
+SELECT 
+    COUNT(1),
+    lead_conversion
+FROM leads_master lm
+    INNER JOIN booking_master bm ON bm.booking_id = lm.app_booking_id
+WHERE 
+    DATE(lm.created_on)=DATE(NOW())
+	AND app_booking_id IS NOT NULL
+	AND bm.rental_status <> 8;
+
+# For Same Day Conversion
+SELECT 
+    COUNT(1),
+    same_day_lead_conversion
+FROM leads_master lm
+    INNER JOIN booking_master bm ON bm.booking_id = lm.app_booking_id
+WHERE 
+    DATE(lm.created_on)=DATE(NOW())
+	AND app_booking_id IS NOT NULL
+	AND DATE(lm.created_on)=DATE(bm.booking_created_on)
+	AND bm.rental_status <> 8;
+****************************************************************
