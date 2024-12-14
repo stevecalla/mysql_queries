@@ -32,7 +32,7 @@ SET @date_interval = 10;
         DATE_FORMAT(lm.created_on, '%Y-%m-%d') AS created_on_pst,
 		bm.Booking_id,
 	
- 		SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT IF(bm.rental_status IS NULL OR bm.rental_status = '', NULL, bm.rental_status)), ',', 1) AS rental_status, -- first non null rental_status
+ 		SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT IF(bm.rental_status IS NULL OR bm.rental_status = '', NULL, bm.rental_status)), ',', 1) AS rental_status, -- first non null rental status,    
  		SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT IF(lm.lead_status_id IS NULL OR lm.lead_status_id = '', NULL, lm.lead_status_id)), ',', 1) AS lead_status_id, -- first non null lead status id
         
 		-- GROUP_CONCAT(DISTINCT IF(lm.lead_id IS NULL OR lm.lead_id = '', NULL, lm.lead_id)) AS lead_id_list,
@@ -379,7 +379,7 @@ SET @date_interval = 10;
 
     -- The subquery combines data from multiple sources and scenarios (multiple leads, single lead, or no booking)
     FROM (
-        -- First subquery: Handles cases where multiple leads are associated with a single booking
+        -- First subquery: Handles `cases where multiple leads are associated with a single booking
         SELECT
             DATE_FORMAT(lm.created_on, '%Y-%m-%d') AS created_on_pst,
             NULLIF(bm.Booking_id, '') AS booking_id,

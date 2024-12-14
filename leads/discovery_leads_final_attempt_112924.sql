@@ -204,7 +204,6 @@ SET @date_interval = 1;
         , CAST(SUM(CASE WHEN lead_status_id IN (16) THEN count_lead_id END) AS UNSIGNED) AS count_leads_invalid
         , CAST(SUM(CASE WHEN lead_status_id NOT IN (16) THEN count_lead_id END) AS UNSIGNED) AS count_leads_valid
 
-        
 		-- SAME DAY COUNTS
         , COUNT(DISTINCT CASE 
             WHEN 
