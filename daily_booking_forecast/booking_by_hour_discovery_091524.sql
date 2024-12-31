@@ -10,22 +10,22 @@ USE myproject;
 
     -- TEST DATES
     SELECT 
-        DATE_ADD(NOW(), INTERVAL -6 HOUR) AS current_datetime_mst, -- convert from utc to gst
-        NOW() AS current_datetime_ust, -- in utc
-        DATE_ADD(NOW(), INTERVAL 4 HOUR) AS current_datetime_gst, -- convert from utc to gst
-        DATE_FORMAT(DATE_ADD(NOW(), INTERVAL -6 HOUR), '%Y-%m-%d') AS formatted_date_mtn,
-        DATE_FORMAT(NOW(), '%Y-%m-%d') AS formatted_date_utc,
-        DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 4 HOUR), '%Y-%m-%d') AS formatted_date_gst;
+        DATE_ADD(UTC_TIMESTAMP(), INTERVAL -6 HOUR) AS current_datetime_mst, -- convert from utc to gst
+        UTC_TIMESTAMP() AS current_datetime_ust, -- in utc
+        DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR) AS current_datetime_gst, -- convert from utc to gst
+        DATE_FORMAT(DATE_ADD(UTC_TIMESTAMP(), INTERVAL -6 HOUR), '%Y-%m-%d') AS formatted_date_mtn,
+        DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-%d') AS formatted_date_utc,
+        DATE_FORMAT(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), '%Y-%m-%d') AS formatted_date_gst;
 
-    -- SET TODAY DATE VARIABLES BASED ON CONVERTING NOW UTC INTO GST
-    SET @today_date_gst = DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 4 HOUR), '%Y-%m-%d');
-    SET @today_date_minus_1_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(NOW(), INTERVAL 4 HOUR), INTERVAL 1 DAY), '%Y-%m-%d'); -- Set the variable for yesterday's date in GST
-    SET @today_date_minus_2_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(NOW(), INTERVAL 4 HOUR), INTERVAL 2 DAY), '%Y-%m-%d'); -- Set the variable for current date - 2 in GST
-    SET @today_date_minus_3_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(NOW(), INTERVAL 4 HOUR), INTERVAL 3 DAY), '%Y-%m-%d'); -- Set the variable for current date - 3 in GST
-    SET @today_date_minus_4_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(NOW(), INTERVAL 4 HOUR), INTERVAL 4 DAY), '%Y-%m-%d'); -- Set the variable for current date - 4 in GST
-    SET @today_date_minus_5_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(NOW(), INTERVAL 4 HOUR), INTERVAL 5 DAY), '%Y-%m-%d'); -- Set the variable for current date - 5 in GST
-    SET @today_date_minus_6_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(NOW(), INTERVAL 4 HOUR), INTERVAL 6 DAY), '%Y-%m-%d'); -- Set the variable for current date - 6 in GST
-    SET @today_date_minus_7_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(NOW(), INTERVAL 4 HOUR), INTERVAL 7 DAY), '%Y-%m-%d'); -- Set the variable for current date - 7 in GST
+-- SET TODAY DATE VARIABLES BASED ON CONVERTING NOW UTC INTO GST
+
+    SET @today_date_minus_1_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), INTERVAL 1 DAY), '%Y-%m-%d'); -- Set the variable for yesterday's date in GST
+    SET @today_date_minus_2_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), INTERVAL 2 DAY), '%Y-%m-%d'); -- Set the variable for current date - 2 in GST
+    SET @today_date_minus_3_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), INTERVAL 3 DAY), '%Y-%m-%d'); -- Set the variable for current date - 3 in GST
+    SET @today_date_minus_4_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), INTERVAL 4 DAY), '%Y-%m-%d'); -- Set the variable for current date - 4 in GST
+    SET @today_date_minus_5_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), INTERVAL 5 DAY), '%Y-%m-%d'); -- Set the variable for current date - 5 in GST
+    SET @today_date_minus_6_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), INTERVAL 6 DAY), '%Y-%m-%d'); -- Set the variable for current date - 6 in GST
+    SET @today_date_minus_7_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), INTERVAL 7 DAY), '%Y-%m-%d'); -- Set the variable for current date - 7 in GST
 -- END
 
 -- VIEW RENTAL CAR BOOKING 2 TABLE
@@ -45,7 +45,7 @@ USE myproject;
         COUNT(*) AS current_bookings,
 
         -- CURRENT DATE / TIME GST    
-        DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 4 HOUR), '%Y-%m-%d %H:%i:%s') AS created_at_gst,
+        DATE_FORMAT(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), '%Y-%m-%d %H:%i:%s') AS created_at_gst,
         co.name AS delivery_country
 
     FROM rental_car_booking2 AS b
@@ -86,7 +86,7 @@ USE myproject;
         DAYNAME(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) AS day_of_week_gst,
         DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H') AS booking_time_bucket_gst,
         CASE
-            WHEN DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 4 HOUR), '%Y-%m-%d') = DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') THEN 1
+            WHEN DATE_FORMAT(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), '%Y-%m-%d') = DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') THEN 1
             ELSE 0
         END AS is_today,
         -- MAX DATE
@@ -102,8 +102,8 @@ USE myproject;
         1 AS count,
         rs.status,
         co.name,
-        DATE_ADD(NOW(), INTERVAL 4 HOUR) AS created_at,
-        MOD(HOUR(DATE_ADD(NOW(), INTERVAL 4 HOUR)), 20) AS current_hour -- MOD WITH , 20 ENSURES THE HOUR WRAPS TO 0 AT 20 (BECAUSE 20 + 4 = MIDNIGHT OR ZERO)
+        DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR) AS created_at,
+        MOD(HOUR(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR)), 20) AS current_hour -- MOD WITH , 20 ENSURES THE HOUR WRAPS TO 0 AT 20 (BECAUSE 20 + 4 = MIDNIGHT OR ZERO)
     FROM rental_car_booking2 AS b
         LEFT JOIN rental_status AS rs ON b.status = rs.id
         INNER JOIN myproject.rental_city rc ON rc.id = b.city_id
@@ -127,8 +127,8 @@ USE myproject;
         SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = '2024-09-18' THEN 1 ELSE 0 END) AS '2024-09-18',
         SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = '2024-09-19' THEN 1 ELSE 0 END) AS '2024-09-19',
         SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = '2024-09-20' THEN 1 ELSE 0 END) AS '2024-09-20',
-        DATE_ADD(NOW(), INTERVAL 4 HOUR) AS date_time_now,
-        MOD(HOUR(DATE_ADD(NOW(), INTERVAL 4 HOUR)), 20) AS current_hour -- MOD WITH , 20 ENSURES THE HOUR WRAPS TO 0 AT 20 (BECAUSE 20 + 4 = MIDNIGHT OR ZERO)
+        DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR) AS date_time_now,
+        MOD(HOUR(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR)), 20) AS current_hour -- MOD WITH , 20 ENSURES THE HOUR WRAPS TO 0 AT 20 (BECAUSE 20 + 4 = MIDNIGHT OR ZERO)
     FROM rental_car_booking2 AS b
         LEFT JOIN rental_status AS rs ON b.status = rs.id
         INNER JOIN myproject.rental_city rc ON rc.id = b.city_id
@@ -139,7 +139,7 @@ USE myproject;
             FROM rental_car_booking2 AS b
         )
         -- AND 
-        -- DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H') < (HOUR(NOW()) + 4)
+        -- DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H') < (HOUR(UTC_TIMESTAMP()) + 4)
     GROUP BY rs.status WITH ROLLUP
     ORDER BY rs.status;
 -- END
@@ -156,8 +156,8 @@ USE myproject;
         SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = '2024-09-18' THEN 1 ELSE 0 END) AS '2024-09-18',
         SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = '2024-09-19' THEN 1 ELSE 0 END) AS '2024-09-19',
         SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = '2024-09-20' THEN 1 ELSE 0 END) AS '2024-09-20',
-        DATE_ADD(NOW(), INTERVAL 4 HOUR) AS date_time_now,
-        MOD(HOUR(DATE_ADD(NOW(), INTERVAL 4 HOUR)), 20) AS current_hour -- MOD WITH , 20 ENSURES THE HOUR WRAPS TO 0 AT 20 (BECAUSE 20 + 4 = MIDNIGHT OR ZERO)
+        DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR) AS date_time_now,
+        MOD(HOUR(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR)), 20) AS current_hour -- MOD WITH , 20 ENSURES THE HOUR WRAPS TO 0 AT 20 (BECAUSE 20 + 4 = MIDNIGHT OR ZERO)
     FROM rental_car_booking2 AS b
         LEFT JOIN rental_status AS rs ON b.status = rs.id
         INNER JOIN myproject.rental_city rc ON rc.id = b.city_id
@@ -165,7 +165,7 @@ USE myproject;
     WHERE 
         DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') > @start_date
         -- AND 
-        -- DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H') < (HOUR(NOW()) + 4)
+        -- DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H') < (HOUR(UTC_TIMESTAMP()) + 4)
     GROUP BY co.name WITH ROLLUP
     ORDER BY co.name;
 -- END
@@ -184,8 +184,8 @@ USE myproject;
         SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = '2024-09-19' THEN 1 ELSE 0 END) AS '2024-09-19',
         SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = '2024-09-20' THEN 1 ELSE 0 END) AS '2024-09-20',
         -- SUM(CASE WHEN rs.status != "Cancelled by User" THEN 1 ELSE 0 END) AS total_count_excluding_cancel,
-        DATE_ADD(NOW(), INTERVAL 4 HOUR) AS date_time_now,
-        MOD(HOUR(DATE_ADD(NOW(), INTERVAL 4 HOUR)), 20) AS current_hour -- MOD WITH , 20 ENSURES THE HOUR WRAPS TO 0 AT 20 (BECAUSE 20 + 4 = MIDNIGHT OR ZERO)
+        DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR) AS date_time_now,
+        MOD(HOUR(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR)), 20) AS current_hour -- MOD WITH , 20 ENSURES THE HOUR WRAPS TO 0 AT 20 (BECAUSE 20 + 4 = MIDNIGHT OR ZERO)
     FROM rental_car_booking2 AS b
         LEFT JOIN rental_status AS rs ON b.status = rs.id
         INNER JOIN myproject.rental_city rc ON rc.id = b.city_id
@@ -196,7 +196,7 @@ USE myproject;
             FROM rental_car_booking2 AS b
         )
         AND 
-        DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H') < (HOUR(NOW()) + 4)
+        DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H') < (HOUR(UTC_TIMESTAMP()) + 4)
     GROUP BY DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H') WITH ROLLUP
     ORDER BY DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H');
 -- END 
@@ -215,9 +215,9 @@ USE myproject;
         SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = '2024-09-18' THEN 1 ELSE 0 END) AS '2024-09-18',
         SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = '2024-09-19' THEN 1 ELSE 0 END) AS '2024-09-19',
         -- SUM(CASE WHEN rs.status != "Cancelled by User" THEN 1 ELSE 0 END) AS total_count_excluding_cancel,
-        DATE_ADD(NOW(), INTERVAL 4 HOUR) AS date_time_now_gst,
-        DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 4 HOUR), '%Y-%m-%d') AS date_now_gst,
-        MOD(HOUR(DATE_ADD(NOW(), INTERVAL 4 HOUR)), 20) AS current_hour -- MOD WITH , 20 ENSURES THE HOUR WRAPS TO 0 AT 20 (BECAUSE 20 + 4 = MIDNIGHT OR ZERO)
+        DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR) AS date_time_now_gst,
+        DATE_FORMAT(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), '%Y-%m-%d') AS date_now_gst,
+        MOD(HOUR(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR)), 20) AS current_hour -- MOD WITH , 20 ENSURES THE HOUR WRAPS TO 0 AT 20 (BECAUSE 20 + 4 = MIDNIGHT OR ZERO)
         
     FROM rental_car_booking2 AS b
         LEFT JOIN rental_status AS rs ON b.status = rs.id
@@ -231,7 +231,7 @@ USE myproject;
         AND 
         co.name IN ('United Arab Emirates')
         -- AND 
-        -- DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H') < (HOUR(NOW()) + 4)
+        -- DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H') < (HOUR(UTC_TIMESTAMP()) + 4)
     GROUP BY DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H') WITH ROLLUP
     ORDER BY DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H');
     -- LIMIT 1000;
@@ -251,15 +251,16 @@ USE myproject;
         SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = @today_date_minus_1_gst THEN 1 ELSE 0 END) AS today_minus_1,
         SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = @today_date_gst THEN 1 ELSE 0 END) AS today,
         -- SUM(CASE WHEN rs.status != "Cancelled by User" THEN 1 ELSE 0 END) AS total_count_excluding_cancel,
-        DATE_ADD(NOW(), INTERVAL 4 HOUR) AS date_time_now_gst,
+        DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR) AS date_time_now_gst,
         @today_date_gst,
-        MOD(HOUR(DATE_ADD(NOW(), INTERVAL 4 HOUR)), 20) AS current_hour -- MOD WITH , 20 ENSURES THE HOUR WRAPS TO 0 AT 20 (BECAUSE 20 + 4 = MIDNIGHT OR ZERO)
+        MOD(HOUR(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR)), 20) AS current_hour -- MOD WITH , 20 ENSURES THE HOUR WRAPS TO 0 AT 20 (BECAUSE 20 + 4 = MIDNIGHT OR ZERO)
         
     FROM rental_car_booking2 AS b
         LEFT JOIN rental_status AS rs ON b.status = rs.id
         INNER JOIN myproject.rental_city rc ON rc.id = b.city_id
         INNER JOIN myproject.rental_country co ON co.id = rc.CountryID
-    WHERE DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') >= (
+    WHERE 
+        DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') >= (
             SELECT 
                 DATE_FORMAT(DATE_SUB(DATE_ADD(MAX(b.created_on), INTERVAL 4 HOUR), INTERVAL 8 DAY), '%Y-%m-%d')
             FROM rental_car_booking2 AS b
@@ -267,7 +268,7 @@ USE myproject;
         AND 
         co.name IN ('United Arab Emirates')
         -- AND 
-        -- DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H') < (HOUR(NOW()) + 4)
+        -- DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H') < (HOUR(UTC_TIMESTAMP()) + 4)
     GROUP BY DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H') WITH ROLLUP
     ORDER BY DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H');
     -- LIMIT 1000;

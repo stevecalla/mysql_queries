@@ -28,8 +28,9 @@ USE ezhire_crm;
         CAST(COUNT(DISTINCT 
             CASE 
                 WHEN 
-                    booking_id_bm IS NOT NULL 
-                    AND lead_status_id NOT IN (16) -- is valid
+                    booking_id_bm IS NOT NULL
+                    AND rental_status NOT IN (8) -- is not cancelled
+                    -- AND lead_status_id NOT IN (16) -- is valid
                     AND TIMESTAMPDIFF(DAY, created_on_pst_lm, booking_created_on_pst_bm) > 7
                     THEN booking_id_bm 
         END) AS UNSIGNED) AS count_booking_id_greater_than_7,
@@ -38,7 +39,7 @@ USE ezhire_crm;
             CASE 
                 WHEN 
                     rental_status IN (8) -- is cancelled
-                    AND lead_status_id NOT IN (16) -- is valid
+                    -- AND lead_status_id NOT IN (16) -- is valid
                     AND TIMESTAMPDIFF(DAY, created_on_pst_lm, booking_created_on_pst_bm) <= 7
                     THEN booking_id_bm 
         END) AS UNSIGNED) AS count_booking_id_cancelled_total,
@@ -47,7 +48,7 @@ USE ezhire_crm;
             CASE 
                 WHEN 
                     rental_status NOT IN (8) -- is not cancelled
-                    AND lead_status_id NOT IN (16) -- is valid
+                    -- AND lead_status_id NOT IN (16) -- is valid
                     AND TIMESTAMPDIFF(DAY, created_on_pst_lm, booking_created_on_pst_bm) <= 7
                     THEN booking_id_bm 
         END) AS UNSIGNED) AS count_booking_id_not_cancelled_total,
@@ -56,7 +57,7 @@ USE ezhire_crm;
             CASE 
                 WHEN 
                     booking_id_bm IS NOT NULL 
-                    AND lead_status_id NOT IN (16) -- is valid
+                    -- AND lead_status_id NOT IN (16) -- is valid
                     AND TIMESTAMPDIFF(DAY, created_on_pst_lm, booking_created_on_pst_bm) <= 7
                     THEN booking_id_bm 
         END) AS UNSIGNED) AS count_booking_id_filtered_total,
@@ -66,7 +67,7 @@ USE ezhire_crm;
             CASE 
                 WHEN 
                     rental_status IN (8) -- is cancelled
-                    AND lead_status_id NOT IN (16) -- is valid
+                    -- AND lead_status_id NOT IN (16) -- is valid
                     -- AND DATE(booking_created_on_pst_bm) = DATE(created_on_pst_lm)
                     AND TIMESTAMPDIFF(DAY, created_on_pst_lm, DATE(booking_created_on_pst_bm)) < 1
                     THEN booking_id_bm 
@@ -76,7 +77,7 @@ USE ezhire_crm;
             CASE 
                 WHEN 
                     rental_status NOT IN (8) -- is cancelled
-                    AND lead_status_id NOT IN (16) -- is valid
+                    -- AND lead_status_id NOT IN (16) -- is valid
                     -- AND DATE(booking_created_on_pst_bm) = DATE(created_on_pst_lm)
                     AND TIMESTAMPDIFF(DAY, created_on_pst_lm, DATE(booking_created_on_pst_bm)) < 1
                     THEN booking_id_bm 
@@ -86,7 +87,7 @@ USE ezhire_crm;
             CASE 
                 WHEN 
                     booking_id_bm IS NOT NULL 
-                    AND lead_status_id NOT IN (16) -- is valid
+                    -- AND lead_status_id NOT IN (16) -- is valid
                     -- AND DATE(booking_created_on_pst_bm) = DATE(created_on_pst_lm)
                     AND TIMESTAMPDIFF(DAY, created_on_pst_lm, DATE(booking_created_on_pst_bm)) < 1
                     THEN booking_id_bm 
@@ -121,8 +122,11 @@ USE ezhire_crm;
             SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT IF(bm.booking_created_on IS NULL OR bm.booking_created_on = '', NULL, CONVERT_TZ(bm.booking_created_on, '+00:00', '+05:00'))), ',', 1) AS booking_created_on_pst_bm,
 
             -- STATUS
-            SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT IF(bm.rental_status IS NULL OR bm.rental_status = '', NULL, bm.rental_status)), ',', 1) AS rental_status, -- first non null rental status,    
+            SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT IF(bm.rental_status IS NULL OR bm.rental_status = '', NULL, bm.rental_status)), ',', 1) AS rental_status, -- first non null rental status,  
             SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT IF(lm.lead_status_id IS NULL OR lm.lead_status_id = '', NULL, lm.lead_status_id)), ',', 1) AS lead_status_id, -- first non null lead status id
+             
+            SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT IF(bm.rental_status IS NULL OR bm.rental_status = '', NULL, rs.status)), ',', 1) AS rental_status_desc, -- first non null rental status,  
+            SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT IF(lm.lead_status_id IS NULL OR lm.lead_status_id = '', NULL, st.lead_status)), ',', 1) AS lead_status, -- first non null lead status id
 
             -- RENTING IN COUNTRY
             SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT
@@ -204,6 +208,7 @@ USE ezhire_crm;
 
         FROM leads_master AS lm
             LEFT JOIN booking_master AS bm ON lm.app_booking_id = bm.Booking_id
+			LEFT JOIN rental_status AS rs ON bm.rental_status = rs.id
 			LEFT JOIN lead_status AS st ON lm.lead_status_id = st.id
 			LEFT JOIN lead_sources AS ls ON lm.lead_source_id = ls.id
             -- this join finds the min created on call log for each lead id (& makes the query more efficent)

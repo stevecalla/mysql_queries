@@ -28,8 +28,9 @@ USE ezhire_crm;
         CAST(COUNT(DISTINCT 
             CASE 
                 WHEN 
-                    booking_id_bm IS NOT NULL 
-                    AND lead_status_id NOT IN (16) -- is valid
+                    booking_id_bm IS NOT NULL
+                    AND rental_status NOT IN (8) -- is not cancelled
+                    -- AND lead_status_id NOT IN (16) -- is valid
                     AND TIMESTAMPDIFF(DAY, created_on_pst_lm, booking_created_on_pst_bm) > 7
                     THEN booking_id_bm 
         END) AS UNSIGNED) AS count_booking_id_greater_than_7,
@@ -38,7 +39,7 @@ USE ezhire_crm;
             CASE 
                 WHEN 
                     rental_status IN (8) -- is cancelled
-                    AND lead_status_id NOT IN (16) -- is valid
+                    -- AND lead_status_id NOT IN (16) -- is valid
                     AND TIMESTAMPDIFF(DAY, created_on_pst_lm, booking_created_on_pst_bm) <= 7
                     THEN booking_id_bm 
         END) AS UNSIGNED) AS count_booking_id_cancelled_total,
@@ -47,7 +48,7 @@ USE ezhire_crm;
             CASE 
                 WHEN 
                     rental_status NOT IN (8) -- is not cancelled
-                    AND lead_status_id NOT IN (16) -- is valid
+                    -- AND lead_status_id NOT IN (16) -- is valid
                     AND TIMESTAMPDIFF(DAY, created_on_pst_lm, booking_created_on_pst_bm) <= 7
                     THEN booking_id_bm 
         END) AS UNSIGNED) AS count_booking_id_not_cancelled_total,
@@ -56,7 +57,7 @@ USE ezhire_crm;
             CASE 
                 WHEN 
                     booking_id_bm IS NOT NULL 
-                    AND lead_status_id NOT IN (16) -- is valid
+                    -- AND lead_status_id NOT IN (16) -- is valid
                     AND TIMESTAMPDIFF(DAY, created_on_pst_lm, booking_created_on_pst_bm) <= 7
                     THEN booking_id_bm 
         END) AS UNSIGNED) AS count_booking_id_filtered_total,
@@ -66,7 +67,7 @@ USE ezhire_crm;
             CASE 
                 WHEN 
                     rental_status IN (8) -- is cancelled
-                    AND lead_status_id NOT IN (16) -- is valid
+                    -- AND lead_status_id NOT IN (16) -- is valid
                     -- AND DATE(booking_created_on_pst_bm) = DATE(created_on_pst_lm)
                     AND TIMESTAMPDIFF(DAY, created_on_pst_lm, DATE(booking_created_on_pst_bm)) < 1
                     THEN booking_id_bm 
@@ -76,7 +77,7 @@ USE ezhire_crm;
             CASE 
                 WHEN 
                     rental_status NOT IN (8) -- is cancelled
-                    AND lead_status_id NOT IN (16) -- is valid
+                    -- AND lead_status_id NOT IN (16) -- is valid
                     -- AND DATE(booking_created_on_pst_bm) = DATE(created_on_pst_lm)
                     AND TIMESTAMPDIFF(DAY, created_on_pst_lm, DATE(booking_created_on_pst_bm)) < 1
                     THEN booking_id_bm 
@@ -86,7 +87,7 @@ USE ezhire_crm;
             CASE 
                 WHEN 
                     booking_id_bm IS NOT NULL 
-                    AND lead_status_id NOT IN (16) -- is valid
+                    -- AND lead_status_id NOT IN (16) -- is valid
                     -- AND DATE(booking_created_on_pst_bm) = DATE(created_on_pst_lm)
                     AND TIMESTAMPDIFF(DAY, created_on_pst_lm, DATE(booking_created_on_pst_bm)) < 1
                     THEN booking_id_bm 
