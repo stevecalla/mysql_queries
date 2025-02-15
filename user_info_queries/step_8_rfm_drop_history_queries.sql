@@ -35,6 +35,12 @@ WHERE created_at_date BETWEEN '2024-09-27' AND '2024-09-30';
 DELETE FROM rfm_score_summary_history_data
 WHERE created_at_date BETWEEN '2024-10-01' AND '2024-11-30';
 
+DELETE FROM rfm_score_summary_history_data
+WHERE created_at_date BETWEEN '2024-12-01' AND '2024-12-31';
+
+DELETE FROM rfm_score_summary_history_data
+WHERE created_at_date BETWEEN '2025-01-01' AND '2025-01-15';
+
 SELECT 'history', created_at_date, COUNT(*) FROM ezhire_user_data.rfm_score_summary_history_data GROUP BY 2;
 
 -- ********************
@@ -54,7 +60,10 @@ DELETE FROM rfm_score_summary_history_data_backup
 WHERE created_at_date BETWEEN '2024-09-27' AND '2024-09-30';
 
 DELETE FROM rfm_score_summary_history_data_backup
-WHERE created_at_date BETWEEN '2024-10-01' AND '2024-11-30';
+WHERE created_at_date BETWEEN '2024-12-01' AND '2024-12-31';
+
+DELETE FROM rfm_score_summary_history_data_backup
+WHERE created_at_date BETWEEN '2025-01-01' AND '2025-01-15';
 
 SELECT 'history', created_at_date, COUNT(*) FROM rfm_score_summary_history_data_backup GROUP BY 2;
 

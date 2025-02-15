@@ -1,13 +1,20 @@
 USE myproject;
 
 -- SET TODAY DATE VARIABLES BASED ON CONVERTING NOW UTC INTO GST
-    SET @today_date_minus_1_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), INTERVAL 1 DAY), '%Y-%m-%d'); -- Set the variable for yesterday's date in GST
-    SET @today_date_minus_2_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), INTERVAL 2 DAY), '%Y-%m-%d'); -- Set the variable for current date - 2 in GST
-    SET @today_date_minus_3_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), INTERVAL 3 DAY), '%Y-%m-%d'); -- Set the variable for current date - 3 in GST
-    SET @today_date_minus_4_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), INTERVAL 4 DAY), '%Y-%m-%d'); -- Set the variable for current date - 4 in GST
-    SET @today_date_minus_5_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), INTERVAL 5 DAY), '%Y-%m-%d'); -- Set the variable for current date - 5 in GST
-    SET @today_date_minus_6_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), INTERVAL 6 DAY), '%Y-%m-%d'); -- Set the variable for current date - 6 in GST
-    SET @today_date_minus_7_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), INTERVAL 7 DAY), '%Y-%m-%d'); -- Set the variable for current date - 7 in GST
+    -- SET @today_date_gst = DATE_FORMAT(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), '%Y-%m-%d');
+    SET @today_date_gst = '2024-12-31';
+    SET @today_date_minus_1_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(@today_date_gst, INTERVAL 4 HOUR), INTERVAL 1 DAY), '%Y-%m-%d'); -- Set the variable for yesterday's date in GST
+    SET @today_date_minus_2_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(@today_date_gst, INTERVAL 4 HOUR), INTERVAL 2 DAY), '%Y-%m-%d'); -- Set the variable for current date - 2 in GST
+    SET @today_date_minus_3_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(@today_date_gst, INTERVAL 4 HOUR), INTERVAL 3 DAY), '%Y-%m-%d'); -- Set the variable for current date - 3 in GST
+    SET @today_date_minus_4_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(@today_date_gst, INTERVAL 4 HOUR), INTERVAL 4 DAY), '%Y-%m-%d'); -- Set the variable for current date - 4 in GST
+    SET @today_date_minus_5_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(@today_date_gst, INTERVAL 4 HOUR), INTERVAL 5 DAY), '%Y-%m-%d'); -- Set the variable for current date - 5 in GST
+    SET @today_date_minus_6_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(@today_date_gst, INTERVAL 4 HOUR), INTERVAL 6 DAY), '%Y-%m-%d'); -- Set the variable for current date - 6 in GST
+
+    SET @today_date_minus_7_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(@today_date_gst, INTERVAL 4 HOUR), INTERVAL 7 DAY), '%Y-%m-%d'); -- Set the variable for current date - 7 in GST
+    SET @today_date_minus_14_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(@today_date_gst, INTERVAL 4 HOUR), INTERVAL 14 DAY), '%Y-%m-%d'); -- Set the variable for current date - 14 in GST
+    SET @today_date_minus_21_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(@today_date_gst, INTERVAL 4 HOUR), INTERVAL 21 DAY), '%Y-%m-%d'); -- Set the variable for current date - 21 in GST
+    SET @today_date_minus_28_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(@today_date_gst, INTERVAL 4 HOUR), INTERVAL 28 DAY), '%Y-%m-%d'); -- Set the variable for current date - 28 in GST
+    SET @today_date_minus_366_gst = DATE_FORMAT(DATE_SUB(DATE_ADD(@today_date_gst, INTERVAL 4 HOUR), INTERVAL 366 DAY), '%Y-%m-%d'); -- Set the variable for current date - 356 in GST
 -- END
 
 -- BOOKINGS BY HOUR BUCKET BY DAY OF THE WEEK; FOR ALL HOUR BOOKING
@@ -15,7 +22,12 @@ USE myproject;
         DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%H') AS booking_time_bucket,
         -- FORMAT(COUNT(*), 0) AS total_count,
         -- Pivot for each unique booking_date EXCLUDING CANCELLED
+        SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = @today_date_minus_366_gst THEN 1 ELSE 0 END) AS today_minus_366,
+        SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = @today_date_minus_28_gst THEN 1 ELSE 0 END) AS today_minus_28,
+        SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = @today_date_minus_21_gst THEN 1 ELSE 0 END) AS today_minus_21,
+        SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = @today_date_minus_14_gst THEN 1 ELSE 0 END) AS today_minus_14,
         SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = @today_date_minus_7_gst THEN 1 ELSE 0 END) AS today_minus_7,
+
         SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = @today_date_minus_6_gst THEN 1 ELSE 0 END) AS today_minus_6,
         SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = @today_date_minus_5_gst THEN 1 ELSE 0 END) AS today_minus_5,
         SUM(CASE WHEN rs.status != "Cancelled by User" AND DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') = @today_date_minus_4_gst THEN 1 ELSE 0 END) AS today_minus_4,
@@ -26,6 +38,11 @@ USE myproject;
         -- SUM(CASE WHEN rs.status != "Cancelled by User" THEN 1 ELSE 0 END) AS total_count_excluding_cancel,
         DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR) AS date_time_now_gst,
         @today_date_gst,
+        @today_date_minus_7_gst,
+        @today_date_minus_14_gst,
+        @today_date_minus_21_gst,
+        @today_date_minus_28_gst,
+        @today_date_minus_366_gst,
         MOD(HOUR(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR)), 20) AS current_hour -- MOD WITH , 20 ENSURES THE HOUR WRAPS TO 0 AT 20 (BECAUSE 20 + 4 = MIDNIGHT OR ZERO)
         
     FROM rental_car_booking2 AS b
@@ -35,7 +52,8 @@ USE myproject;
     WHERE 
         DATE_FORMAT(DATE_ADD(b.created_on, INTERVAL 4 HOUR), '%Y-%m-%d') >= (
             SELECT 
-                DATE_FORMAT(DATE_SUB(DATE_ADD(MAX(b.created_on), INTERVAL 4 HOUR), INTERVAL 8 DAY), '%Y-%m-%d')
+                DATE_FORMAT(DATE_SUB(DATE_ADD(MAX(b.created_on), INTERVAL 4 HOUR), INTERVAL 400 DAY), '%Y-%m-%d')
+                -- DATE_FORMAT(DATE_SUB(DATE_ADD(MAX(b.created_on), INTERVAL 4 HOUR), INTERVAL 8 DAY), '%Y-%m-%d')
             FROM rental_car_booking2 AS b
         )
         AND 

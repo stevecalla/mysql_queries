@@ -6,9 +6,9 @@ USE myproject;
 -- SELECT DISTINCT(is_referral_voilated), COUNT(*) FROM rental_referral GROUP BY 1 ORDER BY 1 DESC LIMIT 10;
 -- SELECT DISTINCT(referrer_flag), COUNT(*) FROM rental_referral GROUP BY 1 ORDER BY 1 DESC LIMIT 10;
 -- SELECT DISTINCT(referee_flag), COUNT(*) FROM rental_referral GROUP BY 1 ORDER BY 1 DESC LIMIT 10;
--- SELECT DISTINCT(created_date), COUNT(*) FROM rental_referral GROUP BY 1 ORDER BY 1 DESC LIMIT 10;
+-- SELECT DISTINCT(created_date), (*) FROM rental_referral GROUP BY 1 ORDER BY 1 DESC LIMIT 10;
 
--- STEP #0 - REVIEW TABLE AND COUNTS
+-- STEP #0 - REVIEW TABLE AND COUNTSCOUNT
 SELECT * FROM rental_referral;
 SELECT COUNT(*) FROM rental_referral;
 

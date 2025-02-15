@@ -1,12 +1,13 @@
 USE myproject;
 
 -- C:\Users\calla\development\ezhire\mysql_queries\daily_booking_forecast\forecast_draft_122724.sql
-
 SET @today_timestamp_utc = UTC_TIMESTAMP();
 SET @today_date_gst = DATE_FORMAT(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), '%Y-%m-%d');
-SET @today_timestamp_gst = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR);
-SET @today_current_hour_gst = DATE_FORMAT(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR), '%H');
-SET @today_current_dayofweek_gst = DAYOFWEEK(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR));
+SET @today_date_gst = '2025-01-03';
+
+SET @today_timestamp_gst = DATE_ADD(@today_date_gst, INTERVAL 4 HOUR);
+SET @today_current_hour_gst = DATE_FORMAT(DATE_ADD(@today_date_gst, INTERVAL 4 HOUR), '%H');
+SET @today_current_dayofweek_gst = DAYOFWEEK(DATE_ADD(@today_date_gst, INTERVAL 4 HOUR));
 SET @same_day_last_week = DATE_FORMAT(DATE_SUB(@today_date_gst, INTERVAL 7 DAY), '%Y-%m-%d');
 
 WITH actual_last_7_days AS (
@@ -281,14 +282,16 @@ WITH actual_last_7_days AS (
 )
 -- SELECT * FROM final_data_table;
 -- SELECT DISTINCT(segment_minor) AS segment_minor, COUNT(*) FROM final_data_table GROUP BY segment_minor;
-SELECT  -- sum by segment_minor
+SELECT
+	segment_major,
     segment_minor, 
+    today_date_gst,
     today_current_hour_gst,
     SUM(CASE WHEN booking_time_bucket_flag IN ("yes") THEN hourly_bookings ELSE 0 END) booking_total_prior_to_current_hour,
     SUM(hourly_bookings) AS booking_total
 FROM final_data_table 
 WHERE segment_minor NOT IN ('actual_last_7_days', 'actuals_same_day_last_4_weeks')
-GROUP BY segment_minor, today_current_hour_gst;
+GROUP BY segment_major, segment_minor, today_date_gst, today_current_hour_gst;
 
 -- FORMATTED BY COLUMN
 -- , hourly_estimate AS (

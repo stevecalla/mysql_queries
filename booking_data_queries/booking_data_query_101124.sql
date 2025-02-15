@@ -1,6 +1,6 @@
 USE myproject;
 
-SET @str_date = '2024-10-01', @end_date = '2024-10-31';
+SET @str_date = '2025-02-01', @end_date = '2025-02-01';
 
 -- ********* START ************ CHANGE LOG
     -- CUSTOMER RATE = 0, EARLY RETURN = 1
@@ -260,17 +260,24 @@ SELECT
 
     Promo_Code AS promo_code,
     promo_code_discount_amount,
-    IFNULL(IF(DATE_FORMAT(promocode_created_date, 
-                '%Y-%m-%d %H:%i:%s') = '0000-00-00 00:00:00',
-                '1900-01-01 12:00:00',
-                promocode_created_date),
-                '1900-01-01 12:00:00') AS promocode_created_date,
+    -- IFNULL(IF(DATE_FORMAT(promocode_created_date, 
+    --             '%Y-%m-%d %H:%i:%s') = '0000-00-00 00:00:00',
+    --             '1900-01-01 12:00:00',
+    --             promocode_created_date),
+    --             '1900-01-01 12:00:00') AS promocode_created_date,
+    CASE 
+        WHEN DATE_FORMAT(promocode_created_date, '%Y-%m-%d %H:%i:%s') = '0000-00-00 00:00:00' THEN NULL
+        WHEN promocode_created_date IS NULL THEN NULL
+        ELSE DATE_FORMAT(promocode_created_date, '%Y-%m-%d %H:%i:%s')
+    END AS promocode_created_date,
     REPLACE(promo_code_description, ',', '') AS promo_code_description,
+    department AS promo_code_department,  
+    Expiray_date AS promo_code_expiration_date,
     
     car_avail_id,
     car_cat_id,
     car_cat_name,
-    requested_car,
+    REPLACE(requested_car, ',', '') AS requested_car,
     car_name,
     make,
     REPLACE(color, ',', '') AS color,
@@ -1125,9 +1132,9 @@ FROM
                         SELECT 
                             SUM(cc.total_charge) AS total_discount
                         FROM
-                            myproject.rental_charges cc
-                        WHERE
-                            cc.booking_id = b.id
+                                myproject.rental_charges cc
+                            WHERE
+                                cc.booking_id = b.id
                                 AND cc.charge_type_id IN (14)), 0)
                 ELSE 
                     IFNULL((
@@ -1516,6 +1523,8 @@ FROM
             '' promo_code_discount_amount,
             DATE_FORMAT(pc.date_created, '%Y-%m-%d %H:%i:%s') promocode_created_date,
             b.Promo_Code promo_code_description,
+            pc.department,
+            pc.Expiray_date,
 
 			b.car_available_id car_avail_id,
             c.cat_id car_cat_id,
@@ -1598,6 +1607,9 @@ FROM
         AND LOWER(au.email) not like '%ezhire%'
 
     -- TBD
+    -- WHERE b.id IN ('248667')
+    -- WHERE b.id IN ('248667') 
+    -- WHERE b.id IN ('362425') -- had an extra comma
     -- WHERE b.id IN ('51859', '75241', '271272')
 
     -- BASE FARE MISSING

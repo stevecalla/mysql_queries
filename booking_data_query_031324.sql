@@ -159,7 +159,8 @@ SELECT
 --                     tb.days,
 --                     tb.deliver_date_string),
 --             0) * tb.conversion_rate AS customer_rate_v2, -- converted to UAE/AED
-    IFNULL(myproject.get_rental_rates(tb.booking_id,
+    IFNULL(myproject.get_rental_rates(
+                    tb.booking_id,
                     tb.millage_id,
                     tb.contract_id,
                     tb.drg,
