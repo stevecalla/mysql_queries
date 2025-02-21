@@ -1,0 +1,17 @@
+THIS IS A PUBLIC API
+
+GET LOCATIONS
+https://ezhire.life/rental/dispatch-centers-locations/
+
+curl -v -X GET "https://ezhire.life/rental/dispatch-centers-locations/" \
+     -H "Authorization: <see .env file>" \
+     -H "Content-Type: application/json"
+
+GET VEHICLES
+https://ezhire.life/rental/rental-cars-details/
+
+curl -v -X GET "https://ezhire.life/rental/rental-cars-details/" \
+     -H "Authorization: <see .env file>" \
+     -H "Content-Type: application/json"
+
+see .ENV FOR API KEY
