@@ -4,8 +4,10 @@ USE ezhire_user_data;
 DROP TABLE IF EXISTS user_data_profile;
 
 CREATE TABLE user_data_profile AS
-	SELECT 
+	SELECT
 		ubd.user_ptr_id,
+
+    	-- Basic User Details (Assuming 1 record per user)
 		ubd.first_name,
 		ubd.last_name,
 		ubd.email,
@@ -31,16 +33,33 @@ CREATE TABLE user_data_profile AS
 
 		-- IS_RESIDENT
 		ubd.is_resident,
+        udkm.all_resident_category,
+		udkm.most_recent_resident_category, -- todo: new
 
 		-- IS_VERIFIED (DOCUMENTS)
 		IFNULL(CASE WHEN ubd.is_verified > 0 THEN 'Yes' ELSE 'No' END, 0) AS user_is_verified,
 
-		-- REPEAT vs NEW USER
-		CASE
-			WHEN ubd.repeated_user = "YES" THEN 'Yes'
-			WHEN ubd.repeated_user = "NO" THEN 'No'
-			ELSE ''
-		END AS is_repeat_user,
+		-- NPS
+		udkm.all_nps_scores, -- todo: new
+		udkm.most_recent_nps_score, -- todo: new
+		udkm.most_recent_nps_comment, -- todo: new
+		
+		-- booking_id grouping
+		udkm.all_booking_ids, -- todo: new
+
+		-- extension segments
+		udkm.booking_count_extended, -- todo: new
+
+		-- REPEAT vs NEW USER (using max b/c some user ids have both yes & no)
+		MAX(
+			CASE 
+				-- WHEN ubd.repeated_user = 'Yes' THEN 'Yes'
+				WHEN ubd.repeated_user = 'Yes' THEN 1
+				WHEN ubd.repeated_user IS NULL THEN ''
+				-- ELSE 'No'
+				ELSE 0
+			END
+		) AS is_repeat_user, -- todo: adjust
 		
 		-- REPEAT, NEW VS FIRST
 		udkm.is_repeat_new_first,
@@ -58,11 +77,11 @@ CREATE TABLE user_data_profile AS
 		udkm.all_countries_distinct,
 		udkm.all_cities_distinct,
 
-		-- PROMO CODE STATUS -- TODO: NEW
-		all_promo_codes_distinct,
-		promo_code_on_most_recent_booking,
-		used_promo_code_last_14_days_flag,
-		used_promo_code_on_every_booking,
+		-- PROMO CODE STATUS
+		udkm.all_promo_codes_distinct,
+		udkm.promo_code_on_most_recent_booking,
+		udkm.used_promo_code_last_14_days_flag,
+		udkm.used_promo_code_on_every_booking,
 
 		-- BOOKING TYPE
 		udkm.booking_type_all_distinct,
@@ -93,13 +112,17 @@ CREATE TABLE user_data_profile AS
 			
 		-- KEY STATS - REVENUE PER BOOKING & DAYS PER BOOKING
 		CASE
+			WHEN udkm.booking_most_recent_return_date IS NULL THEN NULL
 			WHEN (udkm.booking_count_completed + udkm.booking_count_started) = 0 THEN 0 -- AVOID DIVIDING BY 0
-			WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0 -- AVOID DIVIDING INTO 0
+			-- WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0 -- AVOID DIVIDING INTO 0
+			WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN udkm.booking_days_total -- AVOID DIVIDING INTO 0
 			ELSE (udkm.booking_days_total) / (udkm.booking_count_completed + udkm.booking_count_started) -- avg days per booking
 		END total_days_per_completed_and_started_bookings, -- frequency metric
 		CASE
+			WHEN udkm.booking_most_recent_return_date IS NULL THEN NULL
 			WHEN (udkm.booking_count_completed + udkm.booking_count_started) = 0 THEN 0 -- AVOID DIVIDING BY 0
-			WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0 -- AVOID DIVIDING INTO 0
+			-- WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0 -- AVOID DIVIDING INTO 0
+			WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN udkm.booking_charge_total_less_discount_aed -- AVOID DIVIDING INTO 0
 			ELSE (udkm.booking_charge_total_less_discount_aed) / (udkm.booking_count_completed + udkm.booking_count_started) -- revenue per booking
 		END AS booking_charge__less_discount_aed_per_completed_started_bookings, -- monetary value metric
 
@@ -121,11 +144,12 @@ CREATE TABLE user_data_profile AS
 			ELSE udkm.booking_most_recent_return_vs_now
 		END AS rfm_recency_metric,
 
-		-- FREQENCY = AVERAGE DAYS PER COMPLETED/STARTED BOOKING
+		-- FREQUENCY = AVERAGE DAYS PER COMPLETED/STARTED BOOKING
 		CASE
 			WHEN udkm.booking_most_recent_return_date IS NULL THEN NULL
 			WHEN (udkm.booking_count_completed + udkm.booking_count_started) = 0 THEN 0 -- AVOID DIVIDING BY 0
-			WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0 -- AVOID DIVIDING INTO 0
+			-- WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0 -- AVOID DIVIDING INTO 0
+			WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN udkm.booking_days_total -- AVOID DIVIDING INTO 0
 			ELSE (udkm.booking_days_total) / (udkm.booking_count_completed + udkm.booking_count_started) -- avg days per booking
 		END AS rfm_frequency_metric,
 
@@ -133,23 +157,33 @@ CREATE TABLE user_data_profile AS
 		CASE
 			WHEN udkm.booking_most_recent_return_date IS NULL THEN NULL
 			WHEN (udkm.booking_count_completed + udkm.booking_count_started) = 0 THEN 0 -- AVOID DIVIDING BY 0
-			WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0 -- AVOID DIVIDING INTO 0
+			-- WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0 -- AVOID DIVIDING INTO 0
+			WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN udkm.booking_charge_total_less_discount_aed -- AVOID DIVIDING INTO 0
 			ELSE (udkm.booking_charge_total_less_discount_aed) / (udkm.booking_count_completed + udkm.booking_count_started) -- revenue per booking
 		END rfm_monetary_metric
 
 	FROM ezhire_user_data.user_data_combined_booking_data AS ubd
 		LEFT JOIN user_data_key_metrics_rollup AS udkm ON udkm.user_ptr_id = ubd.user_ptr_id
 	-- WHERE 
+	-- 	ubd.user_ptr_id IN ('711774', '711609', '679185', '471934') -- multiple records due to ubd.repeated_user having both yes & no for some users
 		-- ubd.date_join_formatted_gst = '2024-01-01'
 		-- AND
+		-- ubd.user_ptr_id IN ('711774')
 		-- ubd.user_ptr_id IN ('549331')
 		-- ubd.user_ptr_id IN ('549331', '419418', '593518', '593396') -- all above first, repeat, canceller, canceller
 		-- ubd.user_ptr_id IN ('11022')			-- recency score -196586, most recent return date '2562-08-10' & rental cancelled
 		-- booking_count_started = 0
 		-- AND
 		-- udkm.booking_most_recent_return_vs_now < 0
-	GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53
-	ORDER BY ubd.user_ptr_id;
+
+	-- excluding 19, 20, 22-26 due to concat, max or similar grouping function
+	-- GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59
+
+	-- excluding 26 given max
+	GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 59, 60
+
+	ORDER BY ubd.user_ptr_id
+;
 
 -- QUERY ENTIRE user_and_booking_data DB
 SELECT * FROM user_data_profile;

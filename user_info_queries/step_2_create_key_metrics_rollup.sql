@@ -13,6 +13,8 @@ DROP TABLE IF EXISTS user_data_key_metrics_rollup;
 -- CREATE INDEX idx_user_ptr_id_status ON ezhire_user_data.user_data_combined_booking_data (user_ptr_id, status);
 -- CREATE INDEX idx_user_ptr_id_return_date ON ezhire_user_data.user_data_combined_booking_data (user_ptr_id, return_date);
 
+SET SESSION group_concat_max_len = 100000;  -- Increase limit
+
 CREATE TABLE user_data_key_metrics_rollup AS -- todo:
 	SELECT 
 		user_ptr_id,
@@ -188,6 +190,48 @@ CREATE TABLE user_data_key_metrics_rollup AS -- todo:
 			AS DOUBLE
 		) AS booking_most_recent_return_vs_now,
 
+		-- RESIDENT CATEGORY
+        IFNULL(LEFT(GROUP_CONCAT(resident_category ORDER BY booking_date ASC SEPARATOR ','), 10000), '') AS all_resident_category, -- needed to limit the char due to errors
+		IFNULL(
+			SUBSTRING_INDEX(
+				GROUP_CONCAT(resident_category ORDER BY booking_date ASC SEPARATOR ','), 
+				',', 
+				-1
+			), 
+			''
+		) AS most_recent_resident_category,
+
+		-- NPS FIELDS
+		IFNULL(GROUP_CONCAT(nps_score ORDER BY booking_date ASC SEPARATOR ','), '') AS all_nps_scores, -- todo: new
+		IFNULL(
+			SUBSTRING_INDEX(
+				GROUP_CONCAT(nps_score ORDER BY booking_date ASC SEPARATOR ','), 
+				',', 
+				-1
+			), 
+			''
+		) AS most_recent_nps_score,
+		IFNULL(
+			SUBSTRING_INDEX(
+				GROUP_CONCAT(nps_comment ORDER BY booking_date ASC SEPARATOR ','), 
+				',', 
+				-1
+			), 
+			''
+		) AS most_recent_nps_comment,
+
+		-- BOOKING ID GROUPING
+		IFNULL(GROUP_CONCAT(booking_id ORDER BY booking_date ASC SEPARATOR ','), '') AS all_booking_ids, -- todo: new
+
+		-- EXTENSION SEGMENTS
+		SUM(
+			CASE 
+				WHEN is_extended = 'YES' THEN 1 
+				WHEN is_extended = 'NO' THEN 0 
+				ELSE 0 
+			END
+		) AS booking_count_extended, -- todo:
+
 		-- UTC NOW CONVERTED TO GST
 		DATE_ADD(UTC_TIMESTAMP(), INTERVAL 4 HOUR) AS date_now_gst
 
@@ -208,6 +252,8 @@ CREATE TABLE user_data_key_metrics_rollup AS -- todo:
 		-- user_ptr_id IN ('196066') -- date join is greater than first booking date
 
 	-- WHERE -- TODO:
+	-- 	user_ptr_id IN ('711774', '711609', '679185', '471934') -- multiple records due to ubd.repeated_user having both yes & no for some users
+
 		-- user_ptr_id IN ('1580')
 		-- user_ptr_id IN ('549331') 		-- currently started renter; first created 1/4/2024, 
 											-- most recent created on 2/23/24, most recent pickup 2/24/24, 

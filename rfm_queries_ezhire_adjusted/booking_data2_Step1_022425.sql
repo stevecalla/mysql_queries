@@ -2,11 +2,12 @@ drop temporary table if exists booking_data;
 create temporary table booking_data
 #INSERT INTO booking_data
 SELECT *
-	,ROUND((total_payment_after_refund / (tax_value+1)),2) as total_payment_after_refund_vat
-    ,IFNULL(ROUND((total_payment_after_refund / (tax_value+1)),2) * tb.conversion_rate, 0) AS booking_charge_less_discount_aed
+	#,ROUND((total_payment_after_refund / (tax_value+1)),2) as total_payment_after_refund_vat
+    ,IFNULL(booking_charge_less_discount,0) AS booking_charge_less_discount_aed
 FROM (
 SELECT 
         b.id AS booking_id,
+        f.user_ptr_id,
             agreement_number,
             b.millage_id,
             b.contract_id,
@@ -89,6 +90,91 @@ SELECT
 						AND charge_type_id IN (24,6,22)
 						AND is_rental IN (0,1,3)
 				 ) as total_payment_after_refund,
+		
+        (CASE
+			-- WHEN b.early_return = 0 THEN
+			-- 	(SELECT COALESCE(ROUND(SUM(CASE WHEN charge_type_id IN (14) THEN -total_charge ELSE total_charge END),2),0) AS amount
+			-- 	FROM rental_charges rc
+			-- 	WHERE booking_id = b.id
+			-- 	AND (charge_type_id IN (SELECT id FROM rental_charge_types ct WHERE ct.id = rc.charge_type_id AND ct.is_rental = 1)
+			-- 	OR charge_type_id in (35,43))
+			-- 	AND charge_type_id NOT IN (1,34,20,9,34,22,2,12,8,81)
+			-- 	)
+
+            WHEN b.early_return = 0 THEN
+                IFNULL((
+                    SELECT 
+                        SUM(CASE WHEN charge_type_id IN (14) THEN - (total_charge) ELSE (total_charge) END)
+                    FROM
+                        myproject.rental_charges cc
+                    WHERE
+                        cc.booking_id = b.id
+                            AND cc.charge_type_id IN (3 , 4, 11, 15, 16, 17, 18, 19, 21, 23, 25, 26, 29, 30, 31, 32, 35, 36, 37, 38, 39, 40, 41, 48, 49, 50, 51, 52, 56, 57, 14)), 0)
+			-- fix  8/3/24
+                ELSE
+                    CASE
+                        -- Fetch the charge for early return
+                        WHEN IFNULL((
+                            SELECT
+                                charge
+                            FROM
+                                myproject.rental_early_return_charges as erc
+                            WHERE
+                                erc.booking_id = b.id
+                                    AND erc.charge_type_id IN (4)
+                            LIMIT 1
+                        ), 0) = 0 THEN
+                            -- Use the original WHEN clause value
+                            IFNULL(
+                                myproject.get_rental_rates(
+                                    b.id,
+                                    b.millage_id,
+                                    b.contract_id,
+                                    b.drg,
+                                    b.wrg,
+                                    b.mrg,
+                                    b.dr,
+                                    b.wr,
+                                    b.mr,
+                                    b.days,
+                                    b.deliver_date_string
+                                ), 0)
+                                -- adjusted for early return
+                                * CASE
+                                    WHEN b.early_return = 0 THEN IFNULL(b.days, 0)
+                                    ELSE IFNULL(erb.new_days, b.days)
+                                END
+                                + IFNULL((
+                                    SELECT
+                                        SUM(CASE
+                                                WHEN charge_type_id IN (14) THEN -(total_charge)
+                                                WHEN charge_type_id IN (21, 40) THEN (charge)
+                                                WHEN charge_type_id IN (15, 36) THEN (charge)
+                                                ELSE (total_charge)
+                                            END)
+                                    FROM
+                                        myproject.rental_early_return_charges as erc
+                                    WHERE
+                                        erc.booking_id = b.id
+                                            AND erc.charge_type_id IN (3 , 4, 11, 15, 16, 17, 18, 19, 21, 23, 25, 26, 29, 30, 31, 32, 35, 36, 37, 38, 39, 40, 41, 48, 49, 50, 51, 52, 56, 57, 14)), 0)
+                        ELSE
+                            IFNULL((
+                                SELECT
+                                    SUM(CASE
+                                            WHEN charge_type_id IN (14) THEN -(total_charge)
+                                            WHEN charge_type_id IN (21, 40) THEN (charge)
+                                            WHEN charge_type_id IN (15, 36) THEN (charge)
+                                            ELSE (total_charge)
+                                        END)
+                                FROM
+                                    myproject.rental_early_return_charges as erc
+                                WHERE
+                                    erc.booking_id = b.id
+                                        AND erc.charge_type_id IN (3 , 4, 11, 15, 16, 17, 18, 19, 21, 23, 25, 26, 29, 30, 31, 32, 35, 36, 37, 38, 39, 40, 41, 48, 49, 50, 51, 52, 56, 57, 14)), 0)
+                    END
+				END)
+                as booking_charge_less_discount,
+       
 
 			b.car_available_id car_avail_id,
             
@@ -114,13 +200,16 @@ SELECT
         LEFT JOIN country_conversion_rate ct ON ci.CountryID = ct.country_id -- CHANGE
         LEFT JOIN rental_early_return_bookings AS erb ON erb.booking_id = b.id AND erb.is_active = 1
 	WHERE 1 = 1 
-        AND date(date_add(b.created_on,interval 4 hour)) between '2016-01-01' and '2025-02-28' -- todo change
+        AND date(date_add(b.created_on,interval 4 hour)) between '2016-01-01' and '2025-02-28'
         AND COALESCE(b.vendor_id,'') NOT IN (5, 33, 218, 23086)
         AND f.is_test_user = 0
-		AND b.id IN (47926, 64699, 304017, 49462)
+        
+		-- AND booking_id IN (70713,71220,248667,251309,49462,47926,64699,304017) -- 1st sample set
+        AND f.user_ptr_id IN (276033,220300,433284,90574,230847,424927,256050,389223,192627) -- 2nd sample set
+        
+        #AND f.user_ptr_id IN (428486, 62195, 143953, 295647, 283202)
+		#AND b.id = 361630
     ORDER BY b.id
 )tb;
 
--- select COUNT(*) from booking_data;
-select * from booking_data;
--- select * from booking_data where booking_id = 125230;
+SELECT user_ptr_id, booking_id, early_return, days, booking_charge_less_discount FROM booking_data ORDER BY 1, 2;
