@@ -87,3 +87,5 @@ CREATE TEMPORARY TABLE user_data_key_metrics_rollup AS
         FROM user_data_combined_booking_data
         GROUP BY 1
         ORDER BY 1;
+        
+SELECT * FROM user_data_key_metrics_rollup;

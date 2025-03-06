@@ -125,7 +125,8 @@ CREATE TABLE user_data_profile AS
 		CASE
 			WHEN udkm.booking_most_recent_return_date IS NULL THEN NULL
 			WHEN (udkm.booking_count_completed + udkm.booking_count_started) = 0 THEN 0 -- AVOID DIVIDING BY 0
-			WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0 -- AVOID DIVIDING INTO 0
+			-- WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0 -- AVOID DIVIDING INTO 0
+			WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN udkm.booking_days_total -- AVOID DIVIDING INTO 0
 			ELSE (udkm.booking_days_total) / (udkm.booking_count_completed + udkm.booking_count_started) -- avg days per booking
 		END AS rfm_frequency_metric,
 
@@ -133,7 +134,8 @@ CREATE TABLE user_data_profile AS
 		CASE
 			WHEN udkm.booking_most_recent_return_date IS NULL THEN NULL
 			WHEN (udkm.booking_count_completed + udkm.booking_count_started) = 0 THEN 0 -- AVOID DIVIDING BY 0
-			WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0 -- AVOID DIVIDING INTO 0
+			-- WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN 0 -- AVOID DIVIDING INTO 0
+			WHEN udkm.booking_charge_total_less_discount_aed = 0 THEN udkm.booking_charge_total_less_discount_aed -- AVOID DIVIDING INTO 0
 			ELSE (udkm.booking_charge_total_less_discount_aed) / (udkm.booking_count_completed + udkm.booking_count_started) -- revenue per booking
 		END rfm_monetary_metric
 
@@ -149,7 +151,8 @@ CREATE TABLE user_data_profile AS
 		-- AND
 		-- udkm.booking_most_recent_return_vs_now < 0
 	GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53
-	ORDER BY ubd.user_ptr_id;
+	ORDER BY ubd.user_ptr_id
+;
 
 -- QUERY ENTIRE user_and_booking_data DB
 SELECT * FROM user_data_profile;

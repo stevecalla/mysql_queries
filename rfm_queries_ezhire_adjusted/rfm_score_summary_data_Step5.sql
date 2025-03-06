@@ -131,4 +131,30 @@ FROM (
 			#ORDER BY rfm_recency_metric, booking_most_recent_return_date ASC
 	)rfm;
     
-    select * from rfm_score_summary_data;
+    SELECT * FROM rfm_score_summary_data;
+    SELECT
+	user_ptr_id,
+    date_join_cohort,
+    
+    -- RECENCY
+    booking_most_recent_return_date,
+    booking_most_recent_return_vs_now,
+    
+    -- FREQUENCY
+    total_days_per_completed_and_started_bookings,
+    
+    -- MONETARY
+    booking_charge__less_discount_aed_per_completed_started_bookings,
+    
+    -- SCORES
+    score_three_parts,
+    score_five_parts,
+    
+    -- CONTROL V EXPERIMENT
+    test_group
+    
+FROM rfm_score_summary_data 
+-- WHERE user_ptr_id IN (125230)
+-- WHERE user_ptr_id IN (706144, 272965) 
+-- LIMIT 10
+;

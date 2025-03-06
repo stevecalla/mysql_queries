@@ -16,8 +16,11 @@ CREATE TEMPORARY TABLE user_data_combined_booking_data AS
     FROM booking_data AS booking 
     LEFT JOIN auth_user au ON au.id = booking.customer_id
     INNER JOIN rental_fuser fu ON au.id = fu.user_ptr_id
+    ;
     #ON booking.customer_id = user.user_ptr_id;
     -- WHERE
         -- DATE FILTER
         -- DATE_FORMAT(user.date_join_gst, '%Y-%m-%d') = '2024-01-01'
     -- LIMIT 1000;
+    
+select booking_id, customer_id, days, booking_charge_less_discount_aed from user_data_combined_booking_data;
