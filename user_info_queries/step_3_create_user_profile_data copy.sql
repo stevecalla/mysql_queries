@@ -175,10 +175,11 @@ SELECT
 
 	FROM ezhire_user_data.user_data_combined_booking_data AS ubd
 		LEFT JOIN user_data_key_metrics_rollup AS udkm ON udkm.user_ptr_id = ubd.user_ptr_id
-	WHERE 
+	-- WHERE 
+		-- ubd.user_ptr_id IN ('711774', '711609', '679185', '471934') -- multiple records due to ubd.repeated_user having both yes & no for some users
+		
 		-- ubd.date_join_formatted_gst = '2024-01-01'
 		-- AND
-		ubd.user_ptr_id IN ('711774', '711609', '679185', '471934') -- multiple records due to ubd.repeated_user having both yes & no for some users
 		-- ubd.user_ptr_id IN ('711774')
 		-- ubd.user_ptr_id IN ('549331')
 		-- ubd.user_ptr_id IN ('549331', '419418', '593518', '593396') -- all above first, repeat, canceller, canceller

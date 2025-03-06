@@ -33,48 +33,31 @@ CREATE TABLE user_data_profile AS
 
 		-- IS_RESIDENT
 		ubd.is_resident,
-		IFNULL(GROUP_CONCAT(ubd.resident_category ORDER BY ubd.booking_date ASC SEPARATOR ','), '') AS resident_category, -- todo: new
-		MAX(
-			CASE 
-				WHEN ubd.booking_date = (
-					SELECT MAX(booking_date)
-					FROM ezhire_user_data.user_data_combined_booking_data
-					WHERE ubd.user_ptr_id = user_ptr_id
-				) 
-				THEN ubd.resident_category
-				ELSE ''
-			END
-		) AS most_recent_resident_category, -- todo: new
+        udkm.all_resident_category,
+		udkm.most_recent_resident_category, -- todo: new
 
 		-- IS_VERIFIED (DOCUMENTS)
 		IFNULL(CASE WHEN ubd.is_verified > 0 THEN 'Yes' ELSE 'No' END, 0) AS user_is_verified,
 
 		-- NPS
-		IFNULL(GROUP_CONCAT(ubd.nps_score ORDER BY ubd.booking_date ASC SEPARATOR ','), '') AS all_nps_scores, -- todo: new
-		MAX(
-			CASE 
-				WHEN ubd.booking_date = (
-					SELECT MAX(booking_date)
-					FROM ezhire_user_data.user_data_combined_booking_data
-					WHERE ubd.user_ptr_id = user_ptr_id
-				) 
-				THEN ubd.nps_score 
-				ELSE ''
-			END
-		) AS most_recent_nps_score, -- todo: new
-
+		udkm.all_nps_scores, -- todo: new
+		udkm.most_recent_nps_score, -- todo: new
+		udkm.most_recent_nps_comment, -- todo: new
+		
 		-- booking_id grouping
-		IFNULL(GROUP_CONCAT(ubd.booking_id ORDER BY ubd.booking_date ASC SEPARATOR ','), '') AS all_booking_ids, -- todo: new
+		udkm.all_booking_ids, -- todo: new
 
 		-- extension segments
-		SUM(CASE WHEN ubd.is_extended = 1 THEN 1 ELSE 0 END) AS booking_count_extended, -- todo: new
+		udkm.booking_count_extended, -- todo: new
 
 		-- REPEAT vs NEW USER (using max b/c some user ids have both yes & no)
 		MAX(
 			CASE 
-				WHEN ubd.repeated_user = 'Yes' THEN 'Yes'
+				-- WHEN ubd.repeated_user = 'Yes' THEN 'Yes'
+				WHEN ubd.repeated_user = 'Yes' THEN 1
 				WHEN ubd.repeated_user IS NULL THEN ''
-				ELSE 'No'
+				-- ELSE 'No'
+				ELSE 0
 			END
 		) AS is_repeat_user, -- todo: adjust
 		
@@ -182,9 +165,9 @@ CREATE TABLE user_data_profile AS
 	FROM ezhire_user_data.user_data_combined_booking_data AS ubd
 		LEFT JOIN user_data_key_metrics_rollup AS udkm ON udkm.user_ptr_id = ubd.user_ptr_id
 	-- WHERE 
+	-- 	ubd.user_ptr_id IN ('711774', '711609', '679185', '471934') -- multiple records due to ubd.repeated_user having both yes & no for some users
 		-- ubd.date_join_formatted_gst = '2024-01-01'
 		-- AND
-		-- ubd.user_ptr_id IN ('711774', '711609', '679185', '471934') -- multiple records due to ubd.repeated_user having both yes & no for some users
 		-- ubd.user_ptr_id IN ('711774')
 		-- ubd.user_ptr_id IN ('549331')
 		-- ubd.user_ptr_id IN ('549331', '419418', '593518', '593396') -- all above first, repeat, canceller, canceller
@@ -193,8 +176,12 @@ CREATE TABLE user_data_profile AS
 		-- AND
 		-- udkm.booking_most_recent_return_vs_now < 0
 
-	-- excluding 20, 21 due to concat, max
-	GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59
+	-- excluding 19, 20, 22-26 due to concat, max or similar grouping function
+	-- GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59
+
+	-- excluding 26 given max
+	GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 59, 60
+
 	ORDER BY ubd.user_ptr_id
 ;
 

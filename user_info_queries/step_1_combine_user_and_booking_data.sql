@@ -12,7 +12,7 @@ FROM ezhire_user_data.user_data_base AS user
 	LEFT JOIN ezhire_booking_data.booking_data AS booking ON booking.customer_id = user.user_ptr_id
 -- WHERE
 -- 	DATE_FORMAT(user.date_join_gst, '%Y-%m-%d') = '2024-01-01'
--- LIMIT 1000
+-- LIMIT 1
 ;
 
 -- QUERY ENTIRE user_and_booking_data DB
