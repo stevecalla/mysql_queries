@@ -92,19 +92,10 @@ SELECT
 				 ) as total_payment_after_refund,
 		
         (CASE
-			-- WHEN b.early_return = 0 THEN
-			-- 	(SELECT COALESCE(ROUND(SUM(CASE WHEN charge_type_id IN (14) THEN -total_charge ELSE total_charge END),2),0) AS amount
-			-- 	FROM rental_charges rc
-			-- 	WHERE booking_id = b.id
-			-- 	AND (charge_type_id IN (SELECT id FROM rental_charge_types ct WHERE ct.id = rc.charge_type_id AND ct.is_rental = 1)
-			-- 	OR charge_type_id in (35,43))
-			-- 	AND charge_type_id NOT IN (1,34,20,9,34,22,2,12,8,81)
-			-- 	)
-
             WHEN b.early_return = 0 THEN
                 IFNULL((
                     SELECT 
-                        SUM(CASE WHEN charge_type_id IN (14) THEN - (total_charge) ELSE (total_charge) END)
+                        SUM(CASE WHEN charge_type_id IN (14) THEN - (total_charge) ELSE (total_charge) END) * ct.conversion_rate
                     FROM
                         myproject.rental_charges cc
                     WHERE
@@ -173,7 +164,7 @@ SELECT
                                         AND erc.charge_type_id IN (3 , 4, 11, 15, 16, 17, 18, 19, 21, 23, 25, 26, 29, 30, 31, 32, 35, 36, 37, 38, 39, 40, 41, 48, 49, 50, 51, 52, 56, 57, 14)), 0)
                     END
 				END)
-                as booking_charge_less_discount,
+                as booking_charge_less_discount, -- should be AED; might need currency conversion in the early return portion of the code but only added when not early return
        
 
 			b.car_available_id car_avail_id,
@@ -200,15 +191,17 @@ SELECT
         LEFT JOIN country_conversion_rate ct ON ci.CountryID = ct.country_id -- CHANGE
         LEFT JOIN rental_early_return_bookings AS erb ON erb.booking_id = b.id AND erb.is_active = 1
 	WHERE 1 = 1 
-        AND date(date_add(b.created_on,interval 4 hour)) between '2016-01-01' and '2025-02-28'
+        AND date(date_add(b.created_on,interval 4 hour)) between '2016-01-01' and '2025-03-31'
         AND COALESCE(b.vendor_id,'') NOT IN (5, 33, 218, 23086)
         AND f.is_test_user = 0
         
 		-- AND booking_id IN (70713,71220,248667,251309,49462,47926,64699,304017) -- 1st sample set
-        AND f.user_ptr_id IN (276033,220300,433284,90574,230847,424927,256050,389223,192627) -- 2nd sample set
+        -- AND f.user_ptr_id IN (276033,220300,433284,90574,230847,424927,256050,389223,192627) -- 2nd sample set (currency conversion issue; adjusted by adding conversion when early return = 0)
         
-        #AND f.user_ptr_id IN (428486, 62195, 143953, 295647, 283202)
-		#AND b.id = 361630
+        -- AND f.user_ptr_id IN (157737, 218282, 229794, 687458, 604220, 235599, 437320, 427828) -- 3rd sample set
+        
+        -- AND f.user_ptr_id IN (428486, 62195, 143953, 295647, 283202)
+		-- AND b.id = 361630
     ORDER BY b.id
 )tb;
 
