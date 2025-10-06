@@ -1,8 +1,8 @@
 -- SET @user_id = "161549,96214,565263,570744,460721,125230,101999,650422,78306"; -- 1st sample set
--- SET @booking_id = "70713,71220,248667,251309,49462,47926,64699,304017";  -- 1st sample set
+-- SET @booking_id = "70713,71220,248667,251309,49462,47926,64699,304017";  -- 1st sample set (mostly early return issue)
+-- SET @user_id = "276033,220300,433284,90574,230847,424927,256050,389223,192627";  -- 2nd sample set (currency issue)
 
-SET @user_id = "276033,220300,433284,90574,230847,424927,256050,389223,192627";  -- 2nd sample set
-
+SET @user_id = "157737,218282,229794,687458,604220,235599,437320,427828"; -- 3rd sample set
 -- ***************************
 # GET USER BOOKING INFO FROM USER COMBINED DATA TABLE
 -- ***************************
@@ -12,7 +12,7 @@ SELECT
 FROM ezhire_user_data.user_data_combined_booking_data 
 WHERE FIND_IN_SET(user_ptr_id, @user_id)
 -- WHERE FIND_IN_SET(booking_id, @booking_id)
-ORDER BY user_ptr_id, booking_id
+ORDER BY user_ptr_id, booking_id    
 ;
 
 -- ***************************
@@ -38,6 +38,8 @@ WHERE FIND_IN_SET(user_ptr_id, @user_id);
 # GET USER INFO FROM RFM SUMMARY TABLE
 -- ***************************
 -- SELECT * from ezhire_user_data.user_data_combined_booking_data WHERE user_ptr_id IN (96214);
+SELECT * FROM ezhire_user_data.rfm_score_summary_data;
+
 SELECT
 	user_ptr_id,
     date_join_cohort,
@@ -60,6 +62,7 @@ SELECT
     test_group
     
 FROM ezhire_user_data.rfm_score_summary_data 
+ORDER BY user_ptr_id
 -- WHERE FIND_IN_SET(user_ptr_id, @user_id)
 ;
 
@@ -68,8 +71,8 @@ SELECT * FROM ezhire_user_data.rfm_score_summary_data;
 -- ***************************
 # EARLY RETURN TABLE
 -- ***************************
--- SELECT 
--- 	*
--- FROM myproject.rental_early_return_charges as erc
--- -- WHERE erc.booking_id IN (248667);
--- WHERE erc.booking_id IN (251309);
+SELECT 
+	*
+FROM myproject.rental_early_return_charges as erc
+-- WHERE erc.booking_id IN (248667);
+WHERE erc.booking_id IN (88970);

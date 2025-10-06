@@ -1,6 +1,6 @@
 USE myproject;
 
-SET @str_date = '2025-02-01', @end_date = '2025-02-01';
+SET @str_date = '2015-02-01', @end_date = '2025-02-01';
 
 -- ********* START ************ CHANGE LOG
     -- CUSTOMER RATE = 0, EARLY RETURN = 1
@@ -150,12 +150,12 @@ SELECT
         WHEN ((DateDiff(AddDate(Current_Date(), 0), DATE(booking_datetime)) < (28 + (52 * 7))) AND (DateDiff(Current_Date(), DATE(booking_datetime)) >= (52 * 7))) THEN DATE_FORMAT(DATE_ADD(DATE(booking_datetime), INTERVAL (52 * 7) DAY), '%Y-%m-%d')
     END AS comparison_common_date,
     
-    CASE WHEN (DateDiff(AddDate(Current_Date(), 0), DATE(booking_datetime)) < 28) AND (DateDiff(Current_Date(), DATE(booking_datetime)) >= 0) THEN 1  ELSE 0 END AS 'Current_28_Days',
+    CASE WHEN (DateDiff(AddDate(Current_Date(), 0), DATE(booking_datetime)) < 28) AND (DateDiff(Current_Date(), DATE(booking_datetime)) >= 0) THEN 1 ELSE 0 END AS 'Current_28_Days',
 
-    CASE WHEN (DateDiff(AddDate(Current_Date(), 0), DATE(booking_datetime)) < (28 + 28)) AND (DateDiff(Current_Date(), DATE(booking_datetime)) >= 28) THEN 1  ELSE 0 END AS '4_Weeks_Prior',
+    CASE WHEN (DateDiff(AddDate(Current_Date(), 0), DATE(booking_datetime)) < (28 + 28)) AND (DateDiff(Current_Date(), DATE(booking_datetime)) >= 28) THEN 1 ELSE 0 END AS '4_Weeks_Prior',
 
-    CASE WHEN (DateDiff(AddDate(Current_Date(), 0), DATE(booking_datetime)) < (28 + (52 * 7))) AND (DateDiff(Current_Date(), DATE(booking_datetime)) >= (52 * 7)) THEN 1  ELSE 0 END AS '52_Weeks_Prior',
-    -- COMPARISON DATES CURRENT 28 DAYS, PRIOR 4 WEcustomer_driving_countryEKS, 52 WEEKS PRIOR --- END
+    CASE WHEN (DateDiff(AddDate(Current_Date(), 0), DATE(booking_datetime)) < (28 + (52 * 7))) AND (DateDiff(Current_Date(), DATE(booking_datetime)) >= (52 * 7)) THEN 1 ELSE 0 END AS '52_Weeks_Prior',
+    -- COMPARISON DATES CURRENT 28 DAYS, PRIOR 4 WEEKS, 52 WEEKS PRIOR --- END
     
     status,
     booking_type,
@@ -1622,8 +1622,8 @@ FROM
         -- RETURNS MOST RECENT DATE RECORDS FOR EACH booking_id USING is_active flag 1
 
 	-- FOR USE IN MYSQL WITH VARIABLES IN LINE 1
-	WHERE 
-        DATE(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) BETWEEN @str_date AND @end_date
+	WHERE 1 = 1
+        AND DATE(DATE_ADD(b.created_on, INTERVAL 4 HOUR)) BETWEEN @str_date AND @end_date
         -- LOGIC TO EXCLUDE TEST BOOKINGS
 		-- AND COALESCE(b.vendor_id,'') NOT IN (5, 33, 218, 23086) 
 		-- AND (LOWER(au.first_name) NOT LIKE '%test%' 
@@ -1644,7 +1644,10 @@ FROM
         AND LOWER(au.last_name) not like '%ezhire%' 
         AND LOWER(au.email) not like '%ezhire%'
 
+        -- AND date(date_add(b.created_on,interval 4 hour)) = '2025-08-23'
+
     -- TBD
+    -- AND b.id IN (77596)
     -- WHERE b.id IN ('248667')
     -- WHERE b.id IN ('248667') 
     -- WHERE b.id IN ('362425') -- had an extra comma

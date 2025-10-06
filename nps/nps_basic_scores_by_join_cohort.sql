@@ -57,21 +57,28 @@ join_cohort_counts AS (
 customer_rental_counts AS (
     -- For each join cohort, calculate each customer's lifetime rental count
     SELECT
-		date_join_cohort,
+        date_join_cohort,
         user_ptr_id,
-        COUNT(DISTINCT booking_id) AS rental_count
+
+        CASE 
+            WHEN COUNT(DISTINCT CASE WHEN status <> 'Cancelled by User' OR status IS NULL THEN booking_id END) > 1 THEN 'repeat_customer'
+            WHEN COUNT(DISTINCT CASE WHEN status <> 'Cancelled by User' OR status IS NULL THEN booking_id END) = 1 THEN '1_time_customer'
+			WHEN COUNT(DISTINCT CASE WHEN status = 'Cancelled by User' THEN booking_id END) > 0 THEN 'cancelled_customer'
+            ELSE 'looker_customer'
+        END AS customer_category
+    
     FROM user_data_combined_booking_data
-	WHERE status NOT IN ('Cancelled by User')
-		OR status IS NULL
     GROUP BY date_join_cohort, user_ptr_id
 ),
 customer_type_counts AS (
     -- Count the number of customers with multiple vs. single lifetime rentals per join cohort
     SELECT 
         date_join_cohort,
-        SUM(CASE WHEN rental_count > 1 THEN 1 ELSE 0 END) AS repeat_customer,
-        SUM(CASE WHEN rental_count = 1 THEN 1 ELSE 0 END) AS '1_time_customer',
-        SUM(CASE WHEN rental_count = 0 THEN 1 ELSE 0 END) AS looker_customer
+        SUM(CASE WHEN customer_category = 'repeat_customer' THEN 1 ELSE 0 END) AS repeat_customer,
+        SUM(CASE WHEN customer_category = '1_time_customer' THEN 1 ELSE 0 END) AS '1_time_customer',
+        SUM(CASE WHEN customer_category = 'looker_customer' THEN 1 ELSE 0 END) AS looker_customer,
+        SUM(CASE WHEN customer_category = 'cancelled_customer' THEN 1 ELSE 0 END) AS cancelled_customer
+        
     FROM customer_rental_counts
     GROUP BY date_join_cohort
 ),
@@ -81,8 +88,9 @@ nps_joined AS (
         nc.date_join_cohort,
         jcc.total_joins,
         ctc.repeat_customer,
-        ctc.1_time_customer,
+        ctc.`1_time_customer`,
         ctc.looker_customer,
+        ctc.cancelled_customer,
         nc.total_responses,
         nc.promoters,
         nc.detractors,
@@ -101,6 +109,7 @@ nps_summary AS (
         SUM(repeat_customer) AS repeat_customer,
         SUM(1_time_customer) AS '1_time_customer',
         SUM(looker_customer) AS looker_customer,
+        SUM(cancelled_customer) AS cancelled_customer,
         SUM(total_responses) AS total_responses,
         SUM(promoters) AS promoters,
         SUM(detractors) AS detractors,

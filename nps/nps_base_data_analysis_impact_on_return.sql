@@ -12,6 +12,7 @@ nps_extracted AS (
         booking_id,
         booking_type,
         marketplace_or_dispatch,
+        status,
         is_resident, -- telephone prefix
         -- join with profile to get is_repeat_new_first & other dimensions
         date_join_cohort,
